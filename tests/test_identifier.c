@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "token.h"
-#include "../identifier.c"
+#include "../lib/identifier.c"
 
 int main() {
     // Example usage of the generated functions

@@ -1,1 +1,0 @@
-gperf -G -t -H hash_identifier -N get_identifier -C identifier.gperf > identifier.c

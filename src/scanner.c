@@ -1,6 +1,6 @@
 // The scanner is responsible for reading the input file and returning a lsit of tokens.
 #include "scanner.h"
-#include "../identifier.c"
+#include "../lib/identifier.c"
 
 Scanner* newScanner(const char* source) {
     Scanner* scanner = (Scanner*)malloc(sizeof(Scanner));

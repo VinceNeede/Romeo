@@ -10,7 +10,7 @@ Token * newToken(TokenType type, char* lexeme, void *literal, int line){
     token->line = line;
     return token;
 }
-void free_Token(Token* token){
+void freeToken(Token* token){
     if (token->literal != NULL){
         free(token->literal);
     }

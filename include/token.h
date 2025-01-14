@@ -33,7 +33,7 @@ typedef struct {
     int line;
 } Token;
 Token *newToken(TokenType type, char* lexeme, void *literal, int line);
-void free_Token(Token* token);
+void freeToken(Token* token);
 char *TokenToString(Token* token);
 
 #endif //TOKEN_H

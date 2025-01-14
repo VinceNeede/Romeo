@@ -1,4 +1,6 @@
 %{
+#ifndef IDENTIFIER_H
+#define IDENTIFIER_H
 #include "token.h"
 %}
 %struct-type
@@ -23,3 +25,5 @@ this, THIS
 true, TRUE
 var, VAR
 while, WHILE
+%%
+#endif //IDENTIFIER_H
