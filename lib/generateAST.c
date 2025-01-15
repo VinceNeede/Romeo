@@ -243,7 +243,8 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
             argument_name = getIndex_string(slist, 1);
             free(tmp);
             tmp = replace(argument_type, '*','\0');
-            fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+            if (strcmp(tmp, "Token") != 0)
+                fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
             free(tmp);
             freeList_string(slist);
         }
