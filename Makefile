@@ -1,25 +1,21 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
-INCLUDES = -Iinclude -I/home/vince/Tesi/mystring/include/
-LIBS = -L/home/vince/Tesi/mystring/ -lmystring
-SRC = src/HT_key.c src/identifier_map.c src/LinkList_key.c src/LinkList_Token.c src/scanner.c src/token.c
-OBJ = $(SRC:src/%.c=build/%.o)
-TARGET = clox
+CFLAGS = -Wall -Wextra -Wno-missing-field-initializers
+INCLUDES = -Iinclude 
 
-all: $(TARGET)
+all: build_lib build_tests Romeo
 
-$(TARGET): $(OBJ) build/clox.o
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ $(LIBS)
+build_lib:
+	mkdir -p bin
+	@cd lib && make
 
-build/%.o: src/%.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+build_tests: build_lib
+	@cd tests && make
 
-build/clox.o: clox.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
-
+Romeo: 
+	$(CC) $(CFLAGS) $(INCLUDES) -o Romeo Romeo.c src/*.c -Llib -lstringutils -lLinkedLists
 clean:
-	rm -f $(OBJ) build/clox.o $(TARGET)
+	@cd lib && make clean
+	@cd tests && make clean
+	rm -f Romeo
 
 .PHONY: all clean
