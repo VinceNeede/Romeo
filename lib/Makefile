@@ -43,6 +43,6 @@ libstringutils.a : string_utilities.c ../include/string_utilities.h libLinkedLis
 	../bin/generateAST ../include/ ../src/
 
 clean:
-	rm -f identifier.c $(LLS) ../bin/gLL ../bin/gHT ../bin/generateAST libLinkedLists.a libstringutils.a ../include/Expr.h
+	rm -f identifier.c $(LLS) ../bin/gLL ../bin/gHT ../bin/generateAST libLinkedLists.a libstringutils.a ../include/Expr.h ../src/Expr.c
 
 .PHONY: all clean
