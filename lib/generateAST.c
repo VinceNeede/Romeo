@@ -76,8 +76,11 @@ void define_baseName_struct(FILE* file, const char* baseName, const char* types[
 void defineAST_header_only(const char *outputDir, const char *baseName, const char *types_[]) {
     FILE *file;
     char *path = (char*)malloc(strlen(outputDir) + strlen(baseName) + 5);
+    char *baseName_upper = upper(baseName);
     sprintf(path, "%s/%s.h", outputDir, baseName);
     file = fopen(path, "w");
+    fprintf(file,   "#ifndef %s_H\n"
+                    "#define %s_H\n\n", baseName_upper, baseName_upper);
     fprintf(file, "#include \"token.h\"\n\n");
     // include files
     // fprintf(file,   "#include <stdio.h>\n"
@@ -253,6 +256,7 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
     }
     fprintf(source, "\t}\n");   // end switch
     fprintf(source, "\tfree(%s);\n}\n", lower_baseName);    //free the struct
+    fprintf(header, "#endif // %s_H\n", upper_baseName);
     free(lower_baseName);
     free(upper_baseName);
     fclose(header);
