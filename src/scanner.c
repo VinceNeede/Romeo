@@ -43,6 +43,7 @@ void addToken_toScanner(Scanner* scanner, TokenType type, void* literal) {
     strncpy(lexeme, scanner->source + scanner->start, scanner->current - scanner->start);
     lexeme[scanner->current - scanner->start] = '\0';
     add_Token(scanner->tokens, newToken(type, lexeme, literal, scanner->line));
+    free(lexeme);
 }
 
 void literal_string(Scanner* scanner){
