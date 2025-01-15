@@ -139,7 +139,7 @@ void define_accept(const char* headerDir, const char* sourceDir, const char* bas
         free(upper_type);
         types++;
     }
-    fprintf(source, "\t}\n}\n");
+    fprintf(source, "\t}return NULL;\n}\n");
     free(lower_baseName);
     free(upper_baseName);
     fclose(header);
