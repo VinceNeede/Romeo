@@ -149,7 +149,9 @@ int main(int argc, char *argv[]) {
             fprintf(src,"    free%s(node->data);\n", subfix);
         else
             fprintf(src,"    %s(node->data);\n", free_fun);
-    }
+    } else if (free_fun != NULL)
+        fprintf(src,"    %s(node->data);\n", free_fun);
+
     // if (is_struct) fprintf(src,"    free%s(node->data);\n", subfix);
     fprintf(src,"    free(node);\n"
             "}\n"
@@ -211,6 +213,6 @@ int main(int argc, char *argv[]) {
     fclose(src);
     free(path_header);
     free(path_c);
-    free(headers);
+    if (n_headers > 0) free(headers);
     return 0;
 }
