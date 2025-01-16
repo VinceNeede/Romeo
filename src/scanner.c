@@ -57,10 +57,10 @@ void literal_string(Scanner* scanner){
     }
 
     scanner->current++;
-    char* value = (char*)malloc(scanner->current - scanner->start - 1);
+    char* value = (char*)malloc(scanner->current - scanner->start - 2);
     //trim surrounding quotes
-    strncpy(value, scanner->source + scanner->start + 1, scanner->current - scanner->start - 1);
-    value[scanner->current - scanner->start - 1] = '\0';
+    strncpy(value, scanner->source + scanner->start + 1, scanner->current - scanner->start - 2);
+    value[scanner->current - scanner->start - 2] = '\0';
     addToken_toScanner(scanner, STRING, newLiteral(C_STRING, value));
 }
 
