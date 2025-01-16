@@ -6,6 +6,10 @@
 #include <string.h>
 
 typedef enum {
+    C_INT, C_DOUBLE, C_STRING
+} ctypes;
+
+typedef enum {
     // Single-character tokens.
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
     COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR,
@@ -27,13 +31,21 @@ typedef enum {
 } TokenType;
 
 typedef struct {
+    ctypes type;
+    void * data;
+} Literal;
+
+typedef struct {
     TokenType type;
     char* lexeme;
-    void *literal;
+    Literal *literal;
     int line;
 } Token;
-Token *newToken(TokenType type, char* lexeme, void *literal, int line);
+
+Token *newToken(TokenType type, char* lexeme, Literal *literal, int line);
 void freeToken(Token* token);
 char *TokenToString(Token* token);
 
+Literal *newLiteral(ctypes type, void *data);
+void freeLiteral(Literal *literal);
 #endif //TOKEN_H
