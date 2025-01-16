@@ -1,13 +1,13 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
 
-LLS_SUB = Token char string Stmt
+LLS_SUB = Token char string Stmt var
 LLS_H := $(addprefix ../include/LinkList_, $(addsuffix .h, $(LLS_SUB)))
 LLS_C := $(addprefix ./LinkList_, $(addsuffix .c, $(LLS_SUB)))
 LLS = $(LLS_H) $(LLS_C)
 
 
-all: identifier.c libstringutils.a ../bin/generateAST LinkList_Stmt.c libLinkedLists.a
+all: identifier.c libstringutils.a ../bin/generateAST LinkList_Stmt.c HT_string.c HT_var.c libLinkedLists.a
 
 ../bin/gLL: generate_LinkedList_files.c
 	$(CC) $(CFLAGS) -o $@ $^
@@ -30,6 +30,14 @@ LinkList_string.c : ../bin/gLL
 LinkList_Stmt.c : ../bin/gLL
 	../bin/gLL -H ../include -S . -s Stmt -t Stmt* -u -I Stmt.h
 
+HT_string.c : ../bin/gHT
+	../bin/gHT -H ../include -S . -s string -t char*
+
+LinkList_var.c : ../bin/gLL
+	../bin/gLL -H ../include -S . -s var -t Rvariable* -u -f freeRvariable -I variable.h
+HT_var.c : ../bin/gHT LinkList_var.c
+	../bin/gHT -H ../include -S . -s var -t Rvariable* -kt char* -kf name -I variable.h
+
 libstringutils.a : string_utilities.c ../include/string_utilities.h LinkList_string.c LinkList_char.c
 	$(CC) $(CFLAGS) -I../include -c string_utilities.c
 	ar rcs $@ string_utilities.o
@@ -47,6 +55,7 @@ libLinkedLists.a : $(LLS_H)
 clean:
 	rm -f identifier.c $(LLS) ../bin/gLL ../bin/gHT ../bin/generateAST \
 	libLinkedLists.a libstringutils.a ../include/Expr.h ../src/Expr.c \
-	../src/Stmt.c ../include/Stmt.h
+	../src/Stmt.c ../include/Stmt.h HT_string.c ../include/HT_string.h \
+	HT_var.c ../include/HT_var.h
 
 .PHONY: all clean
