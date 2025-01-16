@@ -1,6 +1,6 @@
 #include"token.h"
 
-Token * newToken(TokenType type, char* lexeme, void *literal, int line){
+Token * newToken(TokenType type, char* lexeme, Literal *literal, int line){
     Token * token = (Token*)malloc(sizeof(Token));
     token->type = type;
     token->lexeme = (char*)malloc(strlen(lexeme) + 1);
@@ -11,9 +11,9 @@ Token * newToken(TokenType type, char* lexeme, void *literal, int line){
     return token;
 }
 void freeToken(Token* token){
-    if (token->literal != NULL){
-        free(token->literal);
-    }
+    // if (token->literal != NULL){
+    //     freeLiteral(token->literal);
+    // }
     if (token->lexeme != NULL){
         free(token->lexeme);
     }
@@ -21,13 +21,35 @@ void freeToken(Token* token){
     
 }
 char *TokenToString(Token* token){
-    char * res;
+    char *res;
     if (token->literal != NULL){
-        res = (char*)malloc(strlen(token->lexeme) + strlen(token->literal) + 2);
-        sprintf(res, "%s %s", token->lexeme, (char*)token->literal);
-    } else{
+        char literalStr[32]; // Buffer to hold the string representation of the literal
+        switch (token->literal->type){
+            case C_INT:
+                sprintf(literalStr, "%d", *((int*)token->literal->data));
+                break;
+            case C_DOUBLE:
+                sprintf(literalStr, "%lf", *((double*)token->literal->data));
+                break;
+            case C_STRING:
+                return strdup((char*)token->literal->data);
+        }
+        return strdup(literalStr);
+    } else {
         res = (char*)malloc(strlen(token->lexeme) + 1);
         sprintf(res, "%s", token->lexeme);
     }
     return res;
+}
+
+Literal *newLiteral(ctypes type, void *data){
+    Literal * literal = (Literal*)malloc(sizeof(Literal));
+    literal->type = type;
+    literal->data = data;
+    return literal;
+}
+void freeLiteral(Literal *literal){
+    if (literal == NULL) return;
+    if (literal->data!=NULL) free(literal->data);
+    free(literal);
 }

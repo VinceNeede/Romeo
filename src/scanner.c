@@ -38,7 +38,7 @@ int peekNext(Scanner* scanner) {
 }
 
 
-void addToken_toScanner(Scanner* scanner, TokenType type, void* literal) {
+void addToken_toScanner(Scanner* scanner, TokenType type, Literal* literal) {
     char* lexeme = (char*)malloc(scanner->current - scanner->start + 1);
     strncpy(lexeme, scanner->source + scanner->start, scanner->current - scanner->start);
     lexeme[scanner->current - scanner->start] = '\0';
@@ -61,7 +61,7 @@ void literal_string(Scanner* scanner){
     //trim surrounding quotes
     strncpy(value, scanner->source + scanner->start + 1, scanner->current - scanner->start - 1);
     value[scanner->current - scanner->start - 1] = '\0';
-    addToken_toScanner(scanner, STRING, /*(void*)value*/ NULL);
+    addToken_toScanner(scanner, STRING, newLiteral(C_STRING, value));
 }
 
 int isDigit(char c) {
@@ -77,16 +77,25 @@ int isAlphaNumeric(char c) {
 }
 
 void literal_number(Scanner* scanner){
+    ctypes ctype = C_INT;
     while (isDigit(peek(scanner))) scanner->current++;
     if (peek(scanner) == '.' && isDigit(peekNext(scanner))) {
+        ctype = C_DOUBLE;
         scanner->current++;
         while (isDigit(peek(scanner))) scanner->current++;
     }
     char* value = (char*)malloc(scanner->current - scanner->start + 1);
     strncpy(value, scanner->source + scanner->start, scanner->current - scanner->start);
     value[scanner->current - scanner->start] = '\0';
-    // double number = atof(value);
-    addToken_toScanner(scanner, NUMBER, NULL);      // to understand
+    if (ctype == C_INT) {
+        int* intValue = (int*)malloc(sizeof(int));
+        *intValue = atoi(value);
+        addToken_toScanner(scanner, NUMBER, newLiteral(C_INT, (void*)intValue));
+    } else {
+        double* doubleValue = (double*)malloc(sizeof(double));
+        *doubleValue = atof(value);
+        addToken_toScanner(scanner, NUMBER, newLiteral(C_DOUBLE, (void*)doubleValue));
+    }
     free(value);
 }
 
@@ -98,11 +107,11 @@ void literal_identifier(Scanner* scanner){
     const struct identifier* id = get_identifier(value, scanner->current - scanner->start);
     if (id != NULL){
         addToken_toScanner(scanner, id->value, NULL);
+        free(value);
     }
     else{
-        addToken_toScanner(scanner, IDENTIFIER, /*(void*)value*/ NULL);
+        addToken_toScanner(scanner, IDENTIFIER, newLiteral(C_STRING, (void*)value));
     }
-    free(value);
 }
 
 void scanToken(Scanner* scanner){
