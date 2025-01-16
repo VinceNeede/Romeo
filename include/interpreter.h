@@ -1,4 +1,6 @@
 #include "Expr.h"
+#include "Stmt.h"
 #include "token.h"
+#include "LinkList_Stmt.h"
 
-Literal* Interpret(Expr *);
+void Interpret(List_Stmt *);

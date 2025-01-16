@@ -1,8 +1,17 @@
 #include "interpreter.h"
 
-Visitor* interpreter = NULL;
+struct {
+    ExprVisitor* expr_visitor;
+    StmtVisitor* stmt_visitor;
+} interpreter;
+
 Literal *evaluate(Expr* expr){
-    return (Literal *)accept(interpreter, expr);
+    return (Literal *)ExprAccept(interpreter.expr_visitor, expr);
+}
+
+void execute(Stmt* stmt){
+    StmtAccept(interpreter.stmt_visitor, stmt);
+    return;
 }
 
 void* interpret_Literal(Expr* expr){
@@ -112,21 +121,53 @@ void* interpret_Binary(Expr* expr){
     return (void*) res;
 }
 
-
-Literal* Interpret(Expr *expr){
-    interpreter = (Visitor*)malloc(sizeof(Visitor));
-    if (interpreter == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        exit(1);
+void * interpret_Print(Stmt* stmt){
+    Literal* value = evaluate(stmt->stmt.print.expression);
+    switch (value->type){
+        case C_INT:
+            printf("%d\n", *((int*)value->data));
+            break;
+        case C_DOUBLE:
+            printf("%f\n", *((double*)value->data));
+            break;
+        case C_STRING:
+            printf("%s\n", (char*)value->data);
+            break;
+        default:
+            fprintf(stderr, "Invalid type for print\n");
+            exit(1);
     }
-    interpreter->visitBinary    = interpret_Binary;
-    interpreter->visitGrouping  = interpret_Grouping;
-    interpreter->visitLiteral   = interpret_Literal;
-    interpreter->visitUnary     = interpret_Unary;
+    freeLiteral(value);
+    return NULL;
+}
 
-    Literal* result = evaluate(expr);
-    free(interpreter);
-    return result;
+void * interpret_Expr(Stmt* stmt){
+    evaluate(stmt->stmt.expression.expression);
+    return NULL;
+}
+
+void Interpret(List_Stmt *stmts){
+    interpreter.expr_visitor = (ExprVisitor*)malloc(sizeof(ExprVisitor));
+    interpreter.stmt_visitor = (StmtVisitor*)malloc(sizeof(StmtVisitor));
+
+    interpreter.expr_visitor->visitBinary    = interpret_Binary;
+    interpreter.expr_visitor->visitGrouping  = interpret_Grouping;
+    interpreter.expr_visitor->visitLiteral   = interpret_Literal;
+    interpreter.expr_visitor->visitUnary     = interpret_Unary;
+
+    interpreter.stmt_visitor->visitExpression = interpret_Expr;
+    interpreter.stmt_visitor->visitPrint      = interpret_Print;
+
+    Node_Stmt *current = stmts->head;
+    while (current != NULL){
+        execute(current->data);
+        current = current->next;
+    }
+
+
+    free(interpreter.expr_visitor);
+    free(interpreter.stmt_visitor);
+    return;
 }
 
 
