@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -Wno-switch
 
 # Source files
-SRCS = token identifier scanner ASTPrinter parser interpreter
+SRCS = token identifier scanner interpreter
 EXES = $(SRCS:%=../bin/test_%)
 # Object files
 # SRCS = $(EXES:%=test_%.c)
@@ -21,11 +21,7 @@ all: $(EXES)
 	$(CC) $(CFLAGS)  -I../include -o $@ $^ 
 ../bin/test_scanner: test_scanner.c ../src/token.c ../src/scanner.c 
 	$(CC) $(CFLAGS)  -I../include -o $@ $^ -L../lib/ -lLinkedLists 
-../bin/test_ASTPrinter: test_ASTPrinter.c ../src/token.c ../src/Expr.c ../src/ASTPrinter.c
-	$(CC) $(CFLAGS) -I../include -o $@ $^ -L../lib/ -lstringutils -lLinkedLists
-../bin/test_parser: test_parser.c ../src/token.c ../src/scanner.c ../src/Expr.c ../src/ASTPrinter.c ../src/parser.c
-	$(CC) $(CFLAGS) -I../include -o $@ $^ -L../lib/ -lstringutils -lLinkedLists
-../bin/test_interpreter: test_interpreter.c ../src/token.c ../src/scanner.c ../src/Expr.c ../src/parser.c ../src/interpreter.c
+../bin/test_interpreter: test_interpreter.c ../src/token.c ../src/scanner.c ../src/Expr.c ../src/parser.c ../src/interpreter.c ../src/Stmt.c ../lib/LinkList_Stmt.c
 	$(CC) $(CFLAGS) -I../include -o $@ $^ -L../lib/ -lstringutils -lLinkedLists
 # Clean up build files
 clean:
