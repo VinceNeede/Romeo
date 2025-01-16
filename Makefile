@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wno-missing-field-initializers
+CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -Wno-switch
 INCLUDES = -Iinclude 
 
 all: build_lib build_tests Romeo
