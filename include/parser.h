@@ -4,6 +4,8 @@
 #include "token.h"
 #include "LinkList_Token.h"
 #include "Expr.h"
+#include "Stmt.h"
+#include "LinkList_Stmt.h"
 
 typedef struct {
     List_Token *list;
@@ -12,7 +14,7 @@ typedef struct {
 
 Parser* newParser(List_Token *);
 void freeParser(Parser *);
-Expr *parse(Parser*);
+List_Stmt *parse(Parser*);
 
 
 #endif // PARSER_H

@@ -115,6 +115,19 @@ Expr *expression(Parser* parser){
     return equality(parser);
 }
 
-Expr *parse(Parser* parser){
-    return expression(parser);
+Stmt *statement(Parser* parser){
+    if(match_type(parser, PRINT)){
+        parser->current = parser->current->next;
+        return newPrintStmt(expression(parser));
+    }
+    return newExpressionStmt(expression(parser));
+}
+
+List_Stmt *parse(Parser* parser){
+    List_Stmt *stmts = newList_Stmt();
+    while (!match_type(parser, TOKEN_EOF)){
+        add_Stmt(stmts,statement(parser));
+    }
+    return stmts;
+    // return expression(parser);
 }
