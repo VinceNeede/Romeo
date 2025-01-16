@@ -11,14 +11,14 @@ char* get_type(const char* line){
 }
 
 void defineVisitor(FILE* file, const char* baseName, const char* types[]){
-    fprintf(file, "typedef struct Visitor {\n");
+    fprintf(file, "typedef struct {\n");
     while (*types){
         char* type = get_type(*types);
         fprintf(file, "\tvoid* (*visit%s)(%s*);\n", type, baseName);
         free(type);
         types++;
     }
-    fprintf(file, "} Visitor;\n\n");
+    fprintf(file, "} %sVisitor;\n\n",baseName);
 }
 
 void defineEnum(FILE* file, const char* baseName, const char* types[]){
@@ -68,12 +68,12 @@ void define_baseName_struct(FILE* file, const char* baseName, const char* types[
         types++;
     }
     fprintf(file, "\t} %s;\n", lower_baseName);
-    fprintf(file, "\tvoid* (*accept)(Visitor*, %s*);\n", baseName);
+    fprintf(file, "\tvoid* (*%sAccept)(%sVisitor*, %s*);\n", baseName, baseName, baseName);
     fprintf(file, "} %s;\n", baseName);
     free(lower_baseName);
 }
 
-void defineAST_header_only(const char *outputDir, const char *baseName, const char *types_[]) {
+void defineAST_header_only(const char *outputDir, const char *baseName, const char *types_[], const char *includes[]){
     FILE *file;
     char *path = (char*)malloc(strlen(outputDir) + strlen(baseName) + 5);
     char *baseName_upper = upper(baseName);
@@ -81,7 +81,7 @@ void defineAST_header_only(const char *outputDir, const char *baseName, const ch
     file = fopen(path, "w");
     fprintf(file,   "#ifndef %s_H\n"
                     "#define %s_H\n\n", baseName_upper, baseName_upper);
-    fprintf(file, "#include \"token.h\"\n\n");
+    while (*includes!=NULL) fprintf(file, "#include \"%s\"\n\n",*includes++);
     // include files
     // fprintf(file,   "#include <stdio.h>\n"
     //                 "#include \"token.h\"\n"
@@ -95,7 +95,7 @@ void defineAST_header_only(const char *outputDir, const char *baseName, const ch
     free(path);
 }
 
-void define_accept(const char* headerDir, const char* sourceDir, const char* baseName, const char* types[]){
+void define_Accept(const char* headerDir, const char* sourceDir, const char* baseName, const char* types[]){
     FILE * header, *source;
     char *headerPath = (char*)malloc(strlen(headerDir) + strlen(baseName) + 5);
     char *sourcePath = (char*)malloc(strlen(sourceDir) + strlen(baseName) + 5);
@@ -113,9 +113,11 @@ void define_accept(const char* headerDir, const char* sourceDir, const char* bas
     while(*types){
         StringBuilder = newList_char();
         type = get_type(*types);
-        concat_string_to_list(StringBuilder, "void* accept");
+        concat_string_to_list(StringBuilder, "void* Accept");
         concat_string_to_list(StringBuilder, type);
-        concat_string_to_list(StringBuilder, "(Visitor* visitor, ");
+        concat_string_to_list(StringBuilder, "(");
+        concat_string_to_list(StringBuilder, baseName);
+        concat_string_to_list(StringBuilder, "Visitor* visitor, ");
         concat_string_to_list(StringBuilder, baseName);
         concat_string_to_list(StringBuilder, "* ");
         concat_string_to_list(StringBuilder, lower_baseName);
@@ -130,14 +132,14 @@ void define_accept(const char* headerDir, const char* sourceDir, const char* bas
         types++;
     }
     types=head;
-    fprintf(header, "void* accept(Visitor* visitor, %s* %s);\n", baseName, lower_baseName);
-    fprintf(source, "void* accept(Visitor* visitor, %s* %s){\n", baseName, lower_baseName);
+    fprintf(header, "void* %sAccept(%sVisitor* visitor, %s* %s);\n", baseName, baseName, baseName, lower_baseName);
+    fprintf(source, "void* %sAccept(%sVisitor* visitor, %s* %s){\n", baseName, baseName, baseName, lower_baseName);
     fprintf(source, "\tswitch(%s->type){\n", lower_baseName);
     while(*types){
         type = get_type(*types);
         upper_type = upper(type);
         fprintf(source, "\tcase %s_%s:\n", upper_baseName, upper_type);
-        fprintf(source, "\t\treturn accept%s(visitor, %s);\n", type, lower_baseName);
+        fprintf(source, "\t\treturn Accept%s(visitor, %s);\n", type, lower_baseName);
         free(type);
         free(upper_type);
         types++;
@@ -243,7 +245,7 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
             argument_name = getIndex_string(slist, 1);
             free(tmp);
             tmp = replace(argument_type, '*','\0');
-            if (strcmp(tmp, "Token") != 0)
+            if (strcmp(tmp, "Token") != 0)              // Is this rule general?
                 fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
             free(tmp);
             freeList_string(slist);
@@ -265,9 +267,9 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
     free(headerPath);
     free(sourcePath);
 }
-void defineAST(const char *includeDir,const char *srcDir, const char *baseName, const char *types[]){
-    defineAST_header_only(includeDir, baseName, types);
-    define_accept(includeDir, srcDir, baseName, types);
+void defineAST(const char *includeDir,const char *srcDir, const char *baseName, const char *types[], const char *includes[]){
+    defineAST_header_only(includeDir, baseName, types, includes);
+    define_Accept(includeDir, srcDir, baseName, types);
     define_constructors(includeDir, srcDir, baseName, types);
     define_destructor(includeDir, srcDir, baseName, types);
     // defineAST_source(srcDir, baseName, types);
@@ -280,16 +282,24 @@ int main(int argc, char **argv){
     char *includeDir = argv[1];
     char *srcDir = argv[2];
 
-    const char *names[] = {
+    const char *ExprNames[] = {
         "Binary   : Expr* left, Token* operatorT, Expr* right",
         "Grouping : Expr* expression",
         "Literal  : Token* value",
         "Unary    : Token* operatorT, Expr* right",
         NULL
     };
+    const char *ExprIncludes[] = {"token.h", NULL};
 
-    defineAST(includeDir, srcDir, "Expr", names);
+    defineAST(includeDir, srcDir, "Expr", ExprNames, ExprIncludes);
 
+    const char *StmtNames[] = {
+        "Expression : Expr* expression",
+        "Print      : Expr* expression",
+        NULL
+    };
+    const char *StmtIncludes[] = {"Expr.h", NULL};
+    defineAST(includeDir, srcDir, "Stmt", StmtNames, StmtIncludes);
 
     return 0;
 }
