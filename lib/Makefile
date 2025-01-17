@@ -36,7 +36,7 @@ HT_string.c : ../bin/gHT
 LinkList_var.c : ../bin/gLL
 	../bin/gLL -H ../include -S . -s var -t Rvariable* -u -f freeRvariable -I variable.h
 HT_var.c : ../bin/gHT LinkList_var.c
-	../bin/gHT -H ../include -S . -s var -t Rvariable* -kt char* -kf name -I variable.h
+	../bin/gHT -H ../include -S . -s var -t Rvariable* -kt Token* -kf name -I variable.h token.h
 
 libstringutils.a : string_utilities.c ../include/string_utilities.h LinkList_string.c LinkList_char.c
 	$(CC) $(CFLAGS) -I../include -c string_utilities.c
