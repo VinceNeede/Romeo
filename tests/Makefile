@@ -21,7 +21,9 @@ all: $(EXES)
 	$(CC) $(CFLAGS)  -I../include -o $@ $^ 
 ../bin/test_scanner: test_scanner.c ../src/token.c ../src/scanner.c 
 	$(CC) $(CFLAGS)  -I../include -o $@ $^ -L../lib/ -lLinkedLists 
-../bin/test_interpreter: test_interpreter.c ../src/token.c ../src/scanner.c ../src/Expr.c ../src/parser.c ../src/interpreter.c ../src/Stmt.c ../lib/LinkList_Stmt.c
+../bin/test_interpreter: test_interpreter.c ../src/token.c ../src/scanner.c ../src/Expr.c \
+	../src/parser.c ../src/interpreter.c ../src/Stmt.c ../lib/LinkList_Stmt.c \
+	../lib/types.c ../lib/variable.c ../src/environment.c ../lib/HT_var.c ../lib/HT_string.c
 	$(CC) $(CFLAGS) -I../include -o $@ $^ -L../lib/ -lstringutils -lLinkedLists
 # Clean up build files
 clean:
