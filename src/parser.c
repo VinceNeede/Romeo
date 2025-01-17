@@ -53,7 +53,10 @@ Expr* primary(Parser* parser){
             exit(1);
         }
         parser->current = parser->current->next;
-        return newGroupingExpr(res);    
+        return newGroupingExpr(res);
+    case IDENTIFIER:
+        res = newVariableExpr(token);
+        break;
     default:
         break;
     }
@@ -112,13 +115,31 @@ Expr *equality(Parser* parser){
 }
 
 Expr *expression(Parser* parser){
-    return equality(parser);
+    Expr *expr = equality(parser);
+    if (match_type(parser, EQUAL)){
+        parser->current = parser->current->next;
+        if (expr->type == EXPR_VARIABLE){
+            Token *token = expr->expr.variable.name;
+            expr = newAssignExpr(token, expression(parser));    
+        }
+    }
+    return expr;
+}
+
+Stmt *varDeclaration(Parser* parser){
+    Token *name = parser->current->data;
+    parser->current = parser->current->next->next;
+    Expr *initializer = expression(parser);
+    return newVarStmt(name, initializer);
 }
 
 Stmt *statement(Parser* parser){
     if(match_type(parser, PRINT)){
         parser->current = parser->current->next;
         return newPrintStmt(expression(parser));
+    }
+    if (match_type(parser,IDENTIFIER) && parser->current->next->data->type == EQUAL){
+        return varDeclaration(parser);
     }
     return newExpressionStmt(expression(parser));
 }
@@ -129,5 +150,4 @@ List_Stmt *parse(Parser* parser){
         add_Stmt(stmts,statement(parser));
     }
     return stmts;
-    // return expression(parser);
 }
