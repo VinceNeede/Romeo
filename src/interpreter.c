@@ -1,8 +1,10 @@
 #include "interpreter.h"
+#include "environment.h"
 
 struct {
     ExprVisitor* expr_visitor;
     StmtVisitor* stmt_visitor;
+    Environment* env;
 } interpreter;
 
 Literal *evaluate(Expr* expr){
@@ -141,12 +143,62 @@ void * interpret_Print(Stmt* stmt){
     return NULL;
 }
 
+void *interpret_Variable(Expr* expr){
+    Token* tname = expr->expr.variable.name;
+    Rvariable* var = searchHT_var(interpreter.env->vars, tname);
+    if (var == NULL){
+        fprintf(stderr, "Variable %s not found\n", (char*)tname->literal->data);
+        exit(1);
+    }
+    freeLiteral(tname->literal);
+    return (void*)var_to_literal(var);
+}
+
+void * interpret_VarDeclaration(Stmt* stmt){
+    Token* tname = stmt->stmt.var.name;
+    Literal* value;
+
+    if (stmt -> stmt.var.initializer!= NULL ) value = evaluate(stmt->stmt.var.initializer);
+    else value = newLiteral(C_INT, (void*)0);
+    Rvariable* var = newRvariable_from_Literal(tname, value);
+    if (searchHT_var(interpreter.env->vars, var -> name)!=NULL){
+        fprintf(stderr, "Variable %s already exists\n", (char*)var-> name->literal->data);
+        exit(1);
+    }
+    addHT_var(interpreter.env->vars, var, 0);
+
+    free(value);
+    // free(tname->literal);           //either here or in newRvariable_from_Token
+    return NULL;
+}
+
+void * interpret_VarAssign(Expr* expr){
+    Token* tname = expr->expr.assign.name;
+    Literal* value = evaluate(expr->expr.assign.value);
+    Rvariable* var = searchHT_var(interpreter.env->vars, tname);
+    if (var == NULL){
+        fprintf(stderr, "Variable %s not found\n", (char*)tname->literal->data);
+        exit(1);
+    }
+    update_var_from_Literal(var, value);
+    return (void*)value;
+}
+
 void * interpret_Expr(Stmt* stmt){
     evaluate(stmt->stmt.expression.expression);
     return NULL;
 }
 
 void Interpret(List_Stmt *stmts){
+    Node_Stmt *current = stmts->head;
+    while (current != NULL){
+        execute(current->data);
+        current = current->next;
+    }
+    return;
+}
+
+void interpreter_init(){
     interpreter.expr_visitor = (ExprVisitor*)malloc(sizeof(ExprVisitor));
     interpreter.stmt_visitor = (StmtVisitor*)malloc(sizeof(StmtVisitor));
 
@@ -154,20 +206,21 @@ void Interpret(List_Stmt *stmts){
     interpreter.expr_visitor->visitGrouping  = interpret_Grouping;
     interpreter.expr_visitor->visitLiteral   = interpret_Literal;
     interpreter.expr_visitor->visitUnary     = interpret_Unary;
+    interpreter.expr_visitor->visitVariable  = interpret_Variable;
+    interpreter.expr_visitor->visitAssign    = interpret_VarAssign;
 
     interpreter.stmt_visitor->visitExpression = interpret_Expr;
     interpreter.stmt_visitor->visitPrint      = interpret_Print;
+    interpreter.stmt_visitor->visitVar        = interpret_VarDeclaration;
 
-    Node_Stmt *current = stmts->head;
-    while (current != NULL){
-        execute(current->data);
-        current = current->next;
-    }
-
-
-    free(interpreter.expr_visitor);
-    free(interpreter.stmt_visitor);
+    interpreter.env = newEnvironment(NULL);
     return;
 }
 
+void freeInterpreter(){
+    free(interpreter.expr_visitor);
+    free(interpreter.stmt_visitor);
+    freeEnvironment(interpreter.env);
+    return;
+}
 
