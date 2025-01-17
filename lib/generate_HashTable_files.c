@@ -131,18 +131,18 @@ int main(int argc, char *argv[]) {
     // define HT_subfix_init
     fprintf(header,
             "HT_%s* newHT_%s(int size, size_t (*hash)(const %s), int (*cmp)(const %s, const %s), void (*update)(%s, const %s), void (*free_item)(%s));\n",
-            subfix, subfix, key_type, type, type, type, type, type);
+            subfix, subfix, key_type, key_type, key_type, type, type, type);
     // define HT_subfix_free
     fprintf(header,
             "void freeHT_%s(HT_%s *ht);\n",
             subfix, subfix);
     // define HT_subfix_insert
     fprintf(header,
-            "void addHT_%s(HT_%s *ht, %s item);\n",
+            "void addHT_%s(HT_%s *ht, %s item, int can_update);\n",
             subfix, subfix, type);
     // define HT_subfix_search
     fprintf(header,
-            "%s searchHT_%s(HT_%s *ht, %s key);\n",
+            "%s searchHT_%s(HT_%s *ht, const %s key);\n",
             type, subfix, subfix, key_type);
     // define HT_subfix_delete
     fprintf(header,
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
             "\tht->items = (%s*)malloc(size * sizeof(%s));\n"
             "\tht->overflow_buckets = (List_%s**)malloc(size * sizeof(List_%s*));\n"
             "\tfor (int i = 0; i < size; i++) {\n",
-            subfix, subfix, key_type, type, type, type, type, type,
+            subfix, subfix, key_type, key_type, key_type, type, type, type,
             subfix, subfix, subfix,
             type, type,
             subfix, subfix);
@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
     fprintf(src,
             "void freeHT_%s(HT_%s *ht) {\n"
             "\tfor (int i = 0; i < ht->size; i++) {\n"
-            "\t\tht->free_item(ht->items[i]);\n"
+            "\t\tif(ht->items[i]!=NULL) ht->free_item(ht->items[i]);\n"
             "\t\tfreeList_%s(ht->overflow_buckets[i]);\n"
             "\t}\n"
             "\tfree(ht->items);\n"
@@ -200,13 +200,13 @@ int main(int argc, char *argv[]) {
 		sprintf(tmp,"ht -> cmp(current->data->%s,item->%s)",key_field,key_field);
 	// define addToBucket_subfix
 
-	fprintf(src, 	"void addToBucket_%s(HT_%s *ht, size_t index, %s item) {\n"
+	fprintf(src, 	"void addToBucket_%s(HT_%s *ht, size_t index, %s item, int can_update) {\n"
 					"\tNode_%s *current = ht->overflow_buckets[index]->head;\n"
 					"\twhile(current != NULL && ! %s) {\n"
 					"\t\tcurrent = current -> next;\n"
 					"\t}\n"
 					"\tif(current == NULL) current = newNode_%s(item);\n"
-					"\telse if (ht->update != NULL) %s;\n"
+					"\telse if (ht->update != NULL && can_update) %s;\n"
 					"}\n",
 			subfix, subfix, type, 
 			subfix,
@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
 
 
     // define HT_subfix_insert
-    fprintf(src,"void addHT_%s(HT_%s *ht, %s item) {\n", subfix, subfix, type);
+    fprintf(src,"void addHT_%s(HT_%s *ht, %s item, int can_update) {\n", subfix, subfix, type);
 	if (key_field != NULL){
 	    fprintf(src,"\tsize_t index = ht->hash(item -> %s) %% ht->size;\n",key_field);
 		sprintf(tmp,"ht -> cmp(ht->items[index]->%s,item->%s)",key_field,key_field);
@@ -227,15 +227,15 @@ int main(int argc, char *argv[]) {
                 "\t\tht->items[index] = item;\n"
                 "\t\tht->count++;\n"
                 "\t} else if (%s) {\n"
-                "\t\tif(ht->update!=NULL) ht->update(ht->items[index], item);\n"
+                "\t\tif(ht->update!=NULL && can_update) ht->update(ht->items[index], item);\n"
                 "\t\treturn;\n"
-                "\t} else addToBucket_%s(ht, index, item);\n"
+                "\t} else addToBucket_%s(ht, index, item, can_update);\n"
                 "}\n",
             tmp, subfix);
 
 	// define HT_subfix_search
     fprintf(src,
-            "%s searchHT_%s(HT_%s *ht, %s key) {\n"
+            "%s searchHT_%s(HT_%s *ht, const %s key) {\n"
             "\tsize_t index = ht->hash(key) %% ht->size;\n"
             "\tif (ht->items[index] == NULL) return NULL;\n",type, subfix, subfix, key_type);
 	
@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
     fprintf(src,
             "void rmHT_%s(HT_%s *ht, %s key) {\n"
             "\tsize_t index = ht->hash(key) %% ht->size;\n"
-            "\tif (ht->items[index] == NULL) return NULL;\n", subfix, subfix, key_type);
+            "\tif (ht->items[index] == NULL) return;\n", subfix, subfix, key_type);
 	
 	if (key_field != NULL){
         fprintf(src,"\tif (ht->cmp(ht->items[index]->%s, key)) {\n",key_field);
