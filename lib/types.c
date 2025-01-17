@@ -1,5 +1,5 @@
 #include "types.h"
-
+#include "string_utilities.h"
 
 HT_string *types = NULL;
 
@@ -19,11 +19,17 @@ void update_types(char *a, const char *b){
     fprintf(stderr, "Error: type %s already exists\n",a);
 }
 
-void types_init(){
-    types = newHT_string(MAX_TYPES, hash_types, cmp_types, update_types, NULL);
-    addHT_string(types, "int");
-    addHT_string(types, "double");
-    addHT_string(types, "char");
-    addHT_string(types, "string");
+void freeRtype(Rtype type){
+    free(type); 
 }
 
+void types_init(){
+    types = newHT_string(MAX_TYPES, hash_types, cmp_types, update_types, freeRtype);
+    addHT_string(types, literal_string_to_string("int"),0);
+    addHT_string(types, literal_string_to_string("double"),0);
+    addHT_string(types, literal_string_to_string("string"),0);
+}
+
+void free_types(){
+    freeHT_string(types);
+}
