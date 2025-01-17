@@ -16,4 +16,5 @@ char* trim(char* str);
 char* lower(const char* str);
 char* upper(const char* str);
 char* replace(const char *str, char old, char new);
+char *literal_string_to_string(char *lit);
 #endif // STRING_UTILITIES_H

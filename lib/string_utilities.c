@@ -147,3 +147,15 @@ char* replace(const char *str, char old, char new){
     while ((*res++ = (*str++ == old ? new: *(str-1))));
     return head;
 }
+
+char *literal_string_to_string(char *lit){
+    size_t len = strlen(lit);
+    char *res = (char*)malloc(len + 1);
+    if (res == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    strcpy(res, lit);
+    res[len] = '\0';
+    return res;
+}
