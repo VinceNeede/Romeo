@@ -11,8 +11,8 @@ build_lib:
 build_tests: build_lib
 	@cd tests && make
 
-Romeo: lib/types.c lib/variable.c lib/HT_string.c lib/HT_var.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o Romeo Romeo.c $^ src/*.c -Llib -lstringutils -lLinkedLists
+Romeo: Romeo.c lib/types.c lib/variable.c lib/HT_string.c lib/HT_var.c
+	$(CC) $(CFLAGS) $(INCLUDES) -o Romeo $^ src/*.c -Llib -lstringutils -lLinkedLists
 clean:
 	@cd lib && make clean
 	@cd tests && make clean
