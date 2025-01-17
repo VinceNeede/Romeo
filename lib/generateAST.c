@@ -283,10 +283,12 @@ int main(int argc, char **argv){
     char *srcDir = argv[2];
 
     const char *ExprNames[] = {
+        "Assign   : Token* name, Expr* value",
         "Binary   : Expr* left, Token* operatorT, Expr* right",
         "Grouping : Expr* expression",
         "Literal  : Token* value",
         "Unary    : Token* operatorT, Expr* right",
+        "Variable : Token* name",
         NULL
     };
     const char *ExprIncludes[] = {"token.h", NULL};
@@ -296,6 +298,7 @@ int main(int argc, char **argv){
     const char *StmtNames[] = {
         "Expression : Expr* expression",
         "Print      : Expr* expression",
+        "Var        : Token* name, Expr* initializer",
         NULL
     };
     const char *StmtIncludes[] = {"Expr.h", NULL};
