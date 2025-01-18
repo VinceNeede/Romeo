@@ -18,7 +18,7 @@ typedef enum {
     LESS, LESS_EQUAL,
 
     // Literals.
-    IDENTIFIER, STRING, NUMBER,
+    IDENTIFIER, STRING, NUMBER, TYPE,
 
     // Keywords.
     AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,
@@ -28,7 +28,7 @@ typedef enum {
 } TokenType;
 
 typedef struct {
-    Rtype type;
+    char *type;
     void * data;
 } Literal;
 
@@ -43,6 +43,6 @@ Token *newToken(TokenType type, char* lexeme, Literal *literal, int line);
 void freeToken(Token* token);
 char *TokenToString(Token* token);
 
-Literal *newLiteral(Rtype type, void *data);
+Literal *newLiteral(char *type, void *data);
 void freeLiteral(Literal *literal);
 #endif //TOKEN_H

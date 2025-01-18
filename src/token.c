@@ -24,11 +24,12 @@ char *TokenToString(Token* token){
     char *res;
     if (token->literal != NULL){
         char literalStr[32]; // Buffer to hold the string representation of the literal
-        if (cmp_types(token->literal->type,"int")){
+        char *type = token->literal->type;
+        if (cmp_types(type,"int")){
             sprintf(literalStr, "%d", *((int*)token->literal->data));
-        } else if (cmp_types(token->literal->type,"double")){
+        } else if (cmp_types(type,"double")){
             sprintf(literalStr, "%lf", *((double*)token->literal->data));
-        } else if (cmp_types(token->literal->type,"string")){
+        } else if (cmp_types(type,"string")){
             return strdup((char*)token->literal->data);
         }
         res = strdup(literalStr);
@@ -39,7 +40,7 @@ char *TokenToString(Token* token){
     return res;
 }
 
-Literal *newLiteral(Rtype type, void *data){
+Literal *newLiteral(char *type, void *data){
     Literal * literal = (Literal*)malloc(sizeof(Literal));
     literal->type = type;
     literal->data = data;
