@@ -54,6 +54,7 @@ void run (char* source){
 void runFile(char *path){
     char *source = readFile(path);
     run(source);
+    free(source);
 }
 
 void runPrompt(){
