@@ -145,6 +145,23 @@ Stmt *varDeclaration(Parser* parser){
     return res;
 }
 
+
+Stmt *statement(Parser*); //forward declaration for block
+
+List_Stmt* block(Parser* parser){
+    List_Stmt *stmts = newList_Stmt();
+    parser->current = parser->current->next;
+    while (!match_type(parser, RIGHT_BRACE) && !match_type(parser, TOKEN_EOF)){
+        add_Stmt(stmts, statement(parser));
+    }
+    if (match_type(parser, TOKEN_EOF)){
+        fprintf(stderr, "Expect '}' at the end of block\n");
+        exit(1);
+    }
+    parser->current = parser->current->next;
+    return stmts;
+}
+
 Stmt *statement(Parser* parser){
     if(match_type(parser, PRINT)){
         parser->current = parser->current->next;
@@ -153,6 +170,7 @@ Stmt *statement(Parser* parser){
     if (match_type(parser,TYPE) && parser->current->next->data->type == IDENTIFIER){
         return varDeclaration(parser);
     }
+    if (match_type(parser,LEFT_BRACE)) return newBlockStmt(block(parser));
     return newExpressionStmt(expression(parser));
 }
 
