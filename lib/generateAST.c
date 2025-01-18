@@ -3,7 +3,7 @@
 #include<string_utilities.h>
 
 
-char* get_type(const char* line){
+char* get_type_AST(const char* line){
     List_string* slist = splitString(line, ':');
     char* type = trim(getIndex_string(slist, 0));
     freeList_string(slist);
@@ -13,7 +13,7 @@ char* get_type(const char* line){
 void defineVisitor(FILE* file, const char* baseName, const char* types[]){
     fprintf(file, "typedef struct {\n");
     while (*types){
-        char* type = get_type(*types);
+        char* type = get_type_AST(*types);
         fprintf(file, "\tvoid* (*visit%s)(%s*);\n", type, baseName);
         free(type);
         types++;
@@ -28,7 +28,7 @@ void defineEnum(FILE* file, const char* baseName, const char* types[]){
     char* upper_type = NULL;
 
     while (*types) {
-        type = get_type(*types);
+        type = get_type_AST(*types);
         upper_type = upper(type);
         fprintf(file, "\t%s_%s,\n", upper_baseName, upper_type);
         types++;
@@ -112,7 +112,7 @@ void define_Accept(const char* headerDir, const char* sourceDir, const char* bas
     char* line = NULL;
     while(*types){
         StringBuilder = newList_char();
-        type = get_type(*types);
+        type = get_type_AST(*types);
         concat_string_to_list(StringBuilder, "void* Accept");
         concat_string_to_list(StringBuilder, type);
         concat_string_to_list(StringBuilder, "(");
@@ -136,7 +136,7 @@ void define_Accept(const char* headerDir, const char* sourceDir, const char* bas
     fprintf(source, "void* %sAccept(%sVisitor* visitor, %s* %s){\n", baseName, baseName, baseName, lower_baseName);
     fprintf(source, "\tswitch(%s->type){\n", lower_baseName);
     while(*types){
-        type = get_type(*types);
+        type = get_type_AST(*types);
         upper_type = upper(type);
         fprintf(source, "\tcase %s_%s:\n", upper_baseName, upper_type);
         fprintf(source, "\t\treturn Accept%s(visitor, %s);\n", type, lower_baseName);
@@ -229,6 +229,7 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
 
     fprintf(header, "void free%s(%s*);\n", baseName, baseName);
     fprintf(source, "void free%s(%s* %s){\n", baseName, baseName, lower_baseName);
+    fprintf(source, "\tif (%s == NULL) return;\n", lower_baseName);
     fprintf(source, "\tswitch(%s->type){\n", lower_baseName);
     while(*types){
         slist = splitString(*types, ':');
@@ -246,7 +247,8 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
             free(tmp);
             tmp = replace(argument_type, '*','\0');
             if (strcmp(tmp, "Token") != 0)              // Is this rule general?
-                fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+                if (argument_type[strlen(argument_type)-1] == '*')
+                    fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
             free(tmp);
             freeList_string(slist);
         }
@@ -298,7 +300,7 @@ int main(int argc, char **argv){
     const char *StmtNames[] = {
         "Expression : Expr* expression",
         "Print      : Expr* expression",
-        "Var        : Token* name, Expr* initializer",
+        "Var        : Token* type, Token* name, Expr* initializer",
         NULL
     };
     const char *StmtIncludes[] = {"Expr.h", NULL};
