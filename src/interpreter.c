@@ -138,7 +138,7 @@ void * interpret_Print(Stmt* stmt){
 
 void *interpret_Variable(Expr* expr){
     Token* tname = expr->expr.variable.name;
-    Rvariable* var = searchHT_var(interpreter.env->vars, tname);
+    Rvariable* var = get_var(interpreter.env, tname);
     if (var == NULL){
         fprintf(stderr, "Variable %s not found\n", (char*)tname->literal->data);
         exit(1);
@@ -186,7 +186,7 @@ void * interpret_VarDeclaration(Stmt* stmt){
 void * interpret_VarAssign(Expr* expr){
     Token* tname = expr->expr.assign.name;
     Literal* value = evaluate(expr->expr.assign.value);
-    Rvariable* var = searchHT_var(interpreter.env->vars, tname);
+    Rvariable* var = get_var(interpreter.env, tname);
 
     if (var == NULL){
         Literal * tmp = newLiteral("string",(void*)strdup(value->type));
@@ -214,6 +214,21 @@ void * interpret_Expr(Stmt* stmt){
     return NULL;
 }
 
+void *interpret_Block(Stmt* stmt){
+    Environment* prev = interpreter.env;
+    List_Stmt *stmts = stmt->stmt.block.statements;
+    Node_Stmt *current = stmts->head;
+
+    interpreter.env = newEnvironment(interpreter.env);
+    while (current != NULL){
+        execute(current->data);
+        current = current->next;
+    }
+    freeEnvironment(interpreter.env);
+    interpreter.env = prev;
+    return NULL;
+}
+
 void Interpret(List_Stmt *stmts){
     Node_Stmt *current = stmts->head;
     while (current != NULL){
@@ -237,6 +252,7 @@ void interpreter_init(){
     interpreter.stmt_visitor->visitExpression = interpret_Expr;
     interpreter.stmt_visitor->visitPrint      = interpret_Print;
     interpreter.stmt_visitor->visitVar        = interpret_VarDeclaration;
+    interpreter.stmt_visitor->visitBlock      = interpret_Block;
 
     interpreter.env = newEnvironment(NULL);
     return;

@@ -40,6 +40,13 @@ Environment * newEnvironment(Environment* enclosing){
     return env;
 }
 
+Rvariable* get_var(Environment* env, const Token* key){
+    Rvariable* var = searchHT_var(env->vars, key);
+    if (var != NULL) return var;
+    if (env->enclosing != NULL) return get_var(env->enclosing, key);
+    return NULL;
+}
+
 void freeEnvironment(Environment* env){
     freeHT_var(env->vars);
     free(env);

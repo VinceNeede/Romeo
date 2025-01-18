@@ -73,7 +73,8 @@ void define_baseName_struct(FILE* file, const char* baseName, const char* types[
     free(lower_baseName);
 }
 
-void defineAST_header_only(const char *outputDir, const char *baseName, const char *types_[], const char *includes[]){
+void defineAST_header_only(const char *outputDir, const char *baseName, 
+    const char *types_[], const char *includes[], const char *forwardDeclares[]){
     FILE *file;
     char *path = (char*)malloc(strlen(outputDir) + strlen(baseName) + 5);
     char *baseName_upper = upper(baseName);
@@ -82,6 +83,7 @@ void defineAST_header_only(const char *outputDir, const char *baseName, const ch
     fprintf(file,   "#ifndef %s_H\n"
                     "#define %s_H\n\n", baseName_upper, baseName_upper);
     while (*includes!=NULL) fprintf(file, "#include \"%s\"\n\n",*includes++);
+    while (*forwardDeclares!=NULL) fprintf(file, "%s\n",*forwardDeclares++);
     // include files
     // fprintf(file,   "#include <stdio.h>\n"
     //                 "#include \"token.h\"\n"
@@ -269,8 +271,9 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
     free(headerPath);
     free(sourcePath);
 }
-void defineAST(const char *includeDir,const char *srcDir, const char *baseName, const char *types[], const char *includes[]){
-    defineAST_header_only(includeDir, baseName, types, includes);
+void defineAST(const char *includeDir,const char *srcDir, const char *baseName, 
+    const char *types[], const char *includes[], const char *forwardDeclares[]){
+    defineAST_header_only(includeDir, baseName, types, includes, forwardDeclares);
     define_Accept(includeDir, srcDir, baseName, types);
     define_constructors(includeDir, srcDir, baseName, types);
     define_destructor(includeDir, srcDir, baseName, types);
@@ -294,17 +297,22 @@ int main(int argc, char **argv){
         NULL
     };
     const char *ExprIncludes[] = {"token.h", NULL};
+    const char *ExprForwardDeclares[] = {NULL};
 
-    defineAST(includeDir, srcDir, "Expr", ExprNames, ExprIncludes);
+    defineAST(includeDir, srcDir, "Expr", ExprNames, ExprIncludes, ExprForwardDeclares);
 
     const char *StmtNames[] = {
+        "Block      : List_Stmt* statements",
         "Expression : Expr* expression",
         "Print      : Expr* expression",
         "Var        : Token* type, Token* name, Expr* initializer",
         NULL
     };
     const char *StmtIncludes[] = {"Expr.h", NULL};
-    defineAST(includeDir, srcDir, "Stmt", StmtNames, StmtIncludes);
+    const char *StmtForwardDeclares[] = {"typedef struct List_Stmt List_Stmt;",
+                                        "void freeList_Stmt(List_Stmt *list);"
+                                        ,NULL};
+    defineAST(includeDir, srcDir, "Stmt", StmtNames, StmtIncludes, StmtForwardDeclares);
 
     return 0;
 }

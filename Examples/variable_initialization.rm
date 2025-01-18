@@ -4,4 +4,12 @@ z = 2.5     // implicit declaration
 x = 2*y     // assigment
 print(x)    // 6
 print(x+z)  // implicit cast to double, 8.5
-x = z+3     // error, assigning double to int
+//x = z+x   // error, assigning double to int
+// open a new block
+{
+    k=3
+    k=2*k
+    print(k)
+    print(x+k)  // retrieve variables from parent scope
+}
+//print(k)  // error, k is not in this scope
