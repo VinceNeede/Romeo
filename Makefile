@@ -3,20 +3,16 @@ CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -Wno-switch
 INCLUDES = -Iinclude 
 OUT_FOLDER = ~/.local/local_bin/
 
-all: build_lib build_tests Romeo
+all: build_lib $(OUT_FOLDER)Romeo
 
 build_lib:
 	mkdir -p bin
 	@cd lib && make
 
-build_tests: build_lib
-	@cd tests && make
-
-Romeo: Romeo.c lib/types.c lib/variable.c lib/HT_string.c lib/HT_var.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(OUT_FOLDER)$@ $^ src/*.c -Llib -lstringutils -lLinkedLists
+$(OUT_FOLDER)Romeo: Romeo.c lib/Rtype.c lib/types.c lib/variable.c lib/HT_Rtype.c lib/HT_var.c src/*.c
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ -Llib -lstringutils -lLinkedLists
 clean:
 	@cd lib && make clean
-	@cd tests && make clean
-	rm -f Romeo
+	rm -f $(OUT_FOLDER)Romeo
 
 .PHONY: all clean

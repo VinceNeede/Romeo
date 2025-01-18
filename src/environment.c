@@ -15,15 +15,19 @@ int cmp_var (const Token * key1, const Token * key2){
 
 void update_var_from_Literal(Rvariable* old, const Literal* new){
     // A lot to add here, for now just update the value
-    if (new -> type == C_INT && cmp_types(old->type,"int")){
+    if (!cmp_types(old->type,new->type)){
+        fprintf(stderr, "Error: type mismatch\n");
+        exit(1);
+    }
+    if (cmp_types(old->type,"int")){
         *get_int_var(old) = *((int*)new->data);
-    } else if (new -> type == C_DOUBLE && cmp_types(old->type,"double")){
+    } else if (cmp_types(old->type,"double")){
         *get_double_var(old) = *((double*)new->data);
-    } else if (new -> type == C_STRING && cmp_types(old->type,"string")){
+    } else if (cmp_types(old->type,"string")){
         fprintf(stderr, "Not implemented yet");
         exit(1);
     } else {
-        fprintf(stderr, "Error: type mismatch\n");
+        fprintf(stderr, "Error: not implemented type\n");
         exit(1);
     }
 }

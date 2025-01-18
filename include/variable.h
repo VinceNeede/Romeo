@@ -2,12 +2,12 @@
 #include "token.h"
 
 typedef struct{
-    Rtype type;
+    char* type;
     const Token *name;     // can become a token
     void *pos;
 } Rvariable;
 
-Rvariable *newRvariable(Rtype type, const Token *name, void *pos);
+Rvariable *newRvariable(char* type, const Token *name, void *pos);
 Rvariable *newRvariable_from_Literal(const Token* tname, const Literal* lit);
 void freeRvariable(Rvariable *var);
 

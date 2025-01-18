@@ -1,6 +1,6 @@
 // The scanner is responsible for reading the input file and returning a lsit of tokens.
 #include "scanner.h"
-#include "../lib/identifier.c"
+#include "../lib/keyword.c"
 
 Scanner* newScanner(const char* source) {
     Scanner* scanner = (Scanner*)malloc(sizeof(Scanner));
@@ -61,7 +61,7 @@ void literal_string(Scanner* scanner){
     //trim surrounding quotes
     strncpy(value, scanner->source + scanner->start + 1, scanner->current - scanner->start - 2);
     value[scanner->current - scanner->start - 2] = '\0';
-    addToken_toScanner(scanner, STRING, newLiteral(C_STRING, value));
+    addToken_toScanner(scanner, STRING, newLiteral("string", value));
 }
 
 int isDigit(char c) {
@@ -77,24 +77,24 @@ int isAlphaNumeric(char c) {
 }
 
 void literal_number(Scanner* scanner){
-    ctypes ctype = C_INT;
+    char *type = "int";
     while (isDigit(peek(scanner))) scanner->current++;
     if (peek(scanner) == '.' && isDigit(peekNext(scanner))) {
-        ctype = C_DOUBLE;
+        type = "double";
         scanner->current++;
         while (isDigit(peek(scanner))) scanner->current++;
     }
     char* value = (char*)malloc(scanner->current - scanner->start + 1);
     strncpy(value, scanner->source + scanner->start, scanner->current - scanner->start);
     value[scanner->current - scanner->start] = '\0';
-    if (ctype == C_INT) {
+    if (strcmp(type, "int") == 0){
         int* intValue = (int*)malloc(sizeof(int));
         *intValue = atoi(value);
-        addToken_toScanner(scanner, NUMBER, newLiteral(C_INT, (void*)intValue));
+        addToken_toScanner(scanner, NUMBER, newLiteral(type, (void*)intValue));
     } else {
         double* doubleValue = (double*)malloc(sizeof(double));
         *doubleValue = atof(value);
-        addToken_toScanner(scanner, NUMBER, newLiteral(C_DOUBLE, (void*)doubleValue));
+        addToken_toScanner(scanner, NUMBER, newLiteral(type, (void*)doubleValue));
     }
     free(value);
 }
@@ -104,13 +104,19 @@ void literal_identifier(Scanner* scanner){
     char* value = (char*)malloc(scanner->current - scanner->start + 1);
     strncpy(value, scanner->source + scanner->start, scanner->current - scanner->start);
     value[scanner->current - scanner->start] = '\0';
-    const struct identifier* id = get_identifier(value, scanner->current - scanner->start);
-    if (id != NULL){
-        addToken_toScanner(scanner, id->value, NULL);
+    //check if it is a keyword
+    const struct keyword* key = get_keyword(value, scanner->current - scanner->start);
+    if (key != NULL){
+        addToken_toScanner(scanner, key->value, NULL);
         free(value);
+        return;
+    }
+    Rtype *type = searchHT_Rtype(types, value);
+    if ( type != NULL){
+        addToken_toScanner(scanner, TYPE, newLiteral("string", (void*)value));
     }
     else{
-        addToken_toScanner(scanner, IDENTIFIER, newLiteral(C_STRING, (void*)value));
+        addToken_toScanner(scanner, IDENTIFIER, newLiteral("string", (void*)value));
     }
 }
 

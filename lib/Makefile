@@ -1,13 +1,13 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
 
-LLS_SUB = Token char string Stmt var
+LLS_SUB = Token char string Rtype Stmt var
 LLS_H := $(addprefix ../include/LinkList_, $(addsuffix .h, $(LLS_SUB)))
 LLS_C := $(addprefix ./LinkList_, $(addsuffix .c, $(LLS_SUB)))
 LLS = $(LLS_H) $(LLS_C)
 
 
-all: identifier.c libstringutils.a ../bin/generateAST LinkList_Stmt.c HT_string.c HT_var.c libLinkedLists.a
+all: keyword.c libstringutils.a HT_Rtype.c ../bin/generateAST LinkList_Stmt.c  HT_var.c libLinkedLists.a
 
 ../bin/gLL: generate_LinkedList_files.c
 	$(CC) $(CFLAGS) -o $@ $^
@@ -15,23 +15,26 @@ all: identifier.c libstringutils.a ../bin/generateAST LinkList_Stmt.c HT_string.
 ../bin/gHT: generate_HashTable_files.c
 	$(CC) $(CFLAGS) -o $@ $^
 
-identifier.c : identifier.gperf
-	gperf -I -L C -G -t -H hash_identifier -N get_identifier -C identifier.gperf > identifier.c
+keyword.c : keywords.gperf
+	gperf -I -L C -G -t -H hash_keywords -N get_keyword -C keywords.gperf > keyword.c
 
 LinkList_Token.c : ../bin/gLL
-	../bin/gLL -H ../include -S . -s Token -t Token* -u -I token.h
+	../bin/gLL -H ../include -S . -s Token -t Token\* -u -I token.h
 
 LinkList_char.c : ../bin/gLL
 	../bin/gLL -H ../include -S . -t char 
 
 LinkList_string.c : ../bin/gLL
-	../bin/gLL -H ../include -S . -s string -t char* -f free 
+	../bin/gLL -H ../include -S . -s string -t char\* -f free 
+
+LinkList_Rtype.c : ../bin/gLL
+	../bin/gLL -H ../include -S . -s Rtype -t Rtype\* -u -I Rtype.h
 
 LinkList_Stmt.c : ../bin/gLL
-	../bin/gLL -H ../include -S . -s Stmt -t Stmt* -u -I Stmt.h
+	../bin/gLL -H ../include -S . -s Stmt -t Stmt\* -u -I Stmt.h
 
-HT_string.c : ../bin/gHT
-	../bin/gHT -H ../include -S . -s string -t char*
+HT_Rtype.c : ../bin/gHT LinkList_Rtype.c
+	../bin/gHT -H ../include -S . -s Rtype -t Rtype\* -kt char* -kf name -I Rtype.h
 
 LinkList_var.c : ../bin/gLL
 	../bin/gLL -H ../include -S . -s var -t Rvariable* -u -f freeRvariable -I variable.h
@@ -48,14 +51,14 @@ libLinkedLists.a : $(LLS_H)
 	ar rcs $@ $(LLS_C:.c=.o)
 	rm -f $(LLS_C:.c=.o)
 
-../bin/generateAST: generateAST.c LinkList_char.c LinkList_string.c LinkList_Token.c
+../bin/generateAST: generateAST.c LinkList_char.c LinkList_string.c LinkList_Token.c Rtype.c LinkList_Rtype.c HT_Rtype.c types.c
 	$(CC) $(CFLAGS) -I../include -o $@ $^ ../src/token.c -L./ -lstringutils
 	../bin/generateAST ../include/ ../src/
 
 clean:
-	rm -f identifier.c $(LLS) ../bin/gLL ../bin/gHT ../bin/generateAST \
+	rm -f keyword.c $(LLS) ../bin/gLL ../bin/gHT ../bin/generateAST \
 	libLinkedLists.a libstringutils.a ../include/Expr.h ../src/Expr.c \
-	../src/Stmt.c ../include/Stmt.h HT_string.c ../include/HT_string.h \
+	../src/Stmt.c ../include/Stmt.h HT_Rtype.c ../include/HT_Rtype.h \
 	HT_var.c ../include/HT_var.h
 
 .PHONY: all clean

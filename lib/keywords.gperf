@@ -4,7 +4,7 @@
 #include "token.h"
 %}
 %struct-type
-struct identifier {
+struct keyword {
     const char *name;
     TokenType value;
 };
