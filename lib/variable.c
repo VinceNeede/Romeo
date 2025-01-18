@@ -32,24 +32,7 @@ void freeRvariable(Rvariable *var){
 }
 
 Rvariable *newRvariable_from_Literal(const Token* tname, const Literal* lit){
-    Rtype type;
-    switch (lit->type){
-    case C_INT:
-        type = "int";
-        break;
-    case C_DOUBLE:
-        type = "double";
-        break;
-    case C_STRING:
-        type = "string";
-        break;
-    default:
-        fprintf(stderr, "Invalid type for variable\n");
-        exit(1);
-        break;
-    }
-    // Rvariable * res = newRvariable(type, name, lit->data);
-    return newRvariable(type, tname, lit->data);
+    return newRvariable(lit->type, tname, lit->data);
 }
 
 int *get_int_var(Rvariable* var){
@@ -65,18 +48,14 @@ char *get_string_var(Rvariable* var){
 }
 
 Literal *var_to_literal(Rvariable* var){
-    ctypes ctype;
     void *pos;
     if (strcmp(var->type, "int") == 0){
-        ctype = C_INT;
         pos = malloc(sizeof(int));
         *(int*)pos = *(int*)var->pos;
     } else if (strcmp(var->type, "double") == 0){
-        ctype = C_DOUBLE;
         pos = malloc(sizeof(double));
         *(double*)pos = *(double*)var->pos;
     } else if (strcmp(var->type, "string") == 0){
-        ctype = C_STRING;
         size_t len = strlen((char*)var->pos);
         pos = malloc( len + 1);
         strcpy((char*)pos, (char*)var->pos);
@@ -86,5 +65,5 @@ Literal *var_to_literal(Rvariable* var){
         exit(1);
     }
     
-    return newLiteral(ctype, pos);
+    return newLiteral(var->type, pos);
 }

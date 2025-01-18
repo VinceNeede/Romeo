@@ -7,7 +7,7 @@ LLS_C := $(addprefix ./LinkList_, $(addsuffix .c, $(LLS_SUB)))
 LLS = $(LLS_H) $(LLS_C)
 
 
-all: identifier.c libstringutils.a ../bin/generateAST LinkList_Stmt.c HT_string.c HT_var.c libLinkedLists.a
+all: identifier.c libstringutils.a HT_string.c ../bin/generateAST LinkList_Stmt.c  HT_var.c libLinkedLists.a
 
 ../bin/gLL: generate_LinkedList_files.c
 	$(CC) $(CFLAGS) -o $@ $^
@@ -48,7 +48,7 @@ libLinkedLists.a : $(LLS_H)
 	ar rcs $@ $(LLS_C:.c=.o)
 	rm -f $(LLS_C:.c=.o)
 
-../bin/generateAST: generateAST.c LinkList_char.c LinkList_string.c LinkList_Token.c
+../bin/generateAST: generateAST.c LinkList_char.c LinkList_string.c LinkList_Token.c types.c HT_string.c
 	$(CC) $(CFLAGS) -I../include -o $@ $^ ../src/token.c -L./ -lstringutils
 	../bin/generateAST ../include/ ../src/
 

@@ -32,27 +32,24 @@ void* interpret_Unary(Expr* expr){
 
     switch (operatorT->type){
         case MINUS:
-            switch (rightValue->type){
-                case C_INT:
-                    int * value = (int*)malloc(sizeof(int));
-                    *value = -1 * (*((int*)rightValue->data));
-                    res = newLiteral(C_INT, (void*)value);
-                    break;
-                case C_DOUBLE:
-                    double * doubleValue = (double*)malloc(sizeof(double));
-                    *doubleValue = -1 * (*((double*)rightValue->data));
-                    res = newLiteral(C_DOUBLE, (void*)doubleValue);
-                    break;
-                default:
-                    fprintf(stderr, "Invalid type for unary minus\n");
-                    exit(1);
+            if (cmp_types(rightValue->type, "int")){
+                int * value = (int*)malloc(sizeof(int));
+                *value = -1 * (*((int*)rightValue->data));
+                res = newLiteral("int", (void*)value);
+            }else if (cmp_types(rightValue->type, "double")){
+                double * doubleValue = (double*)malloc(sizeof(double));
+                *doubleValue = -1 * (*((double*)rightValue->data));
+                res = newLiteral("double", (void*)doubleValue);
+            } else {
+                fprintf(stderr, "Invalid type for unary minus\n");
+                exit(1);
             }
             break;
         case BANG:
-            if (rightValue->type == C_INT){
+            if (cmp_types(rightValue->type, "int")){
                 int * value = (int*)malloc(sizeof(int));
                 *value =  !(*((int*)rightValue->data));
-                res = newLiteral(C_INT, (void*)value);
+                res = newLiteral("int", (void*)value);
                 break;
             } else {
                 fprintf(stderr, "Invalid type for unary bang\n");
@@ -95,28 +92,28 @@ void* interpret_Binary(Expr* expr){
     Literal* leftValue = evaluate(left);
     Literal* rightValue = evaluate(right);
     Literal *res;
-    if (leftValue->type == C_INT && rightValue->type == C_INT){
+    if (cmp_types(leftValue->type, "int") && cmp_types(rightValue->type, "int")){
         int* value = (int*)malloc(sizeof(int));
         int leftv = *((int*)leftValue->data);
         int rightv = *((int*)rightValue->data);
         oper_int(value, leftv, rightv, operatorT->type);
-        res = newLiteral(C_INT, (void*)value);
+        res = newLiteral("int", (void*)value);
     }
     else{
         double* value = (double*)malloc(sizeof(double));
         double leftv, rightv;
-        if (leftValue->type == C_INT){
+        if (cmp_types(leftValue->type, "int")){
             leftv = (double)*((int*)leftValue->data);
         } else {
             leftv = *((double*)leftValue->data);
         }
-        if (rightValue->type == C_INT){
+        if (cmp_types(rightValue->type, "int")){
             rightv = (double)*((int*)rightValue->data);
         } else {
             rightv = *((double*)rightValue->data);
         }
         oper_double(value, leftv, rightv, operatorT->type);
-        res = newLiteral(C_DOUBLE, (void*)value);
+        res = newLiteral("doulbe", (void*)value);
     }
     freeLiteral(leftValue);
     freeLiteral(rightValue);
@@ -125,19 +122,15 @@ void* interpret_Binary(Expr* expr){
 
 void * interpret_Print(Stmt* stmt){
     Literal* value = evaluate(stmt->stmt.print.expression);
-    switch (value->type){
-        case C_INT:
-            printf("%d\n", *((int*)value->data));
-            break;
-        case C_DOUBLE:
-            printf("%f\n", *((double*)value->data));
-            break;
-        case C_STRING:
-            printf("%s\n", (char*)value->data);
-            break;
-        default:
-            fprintf(stderr, "Invalid type for print\n");
-            exit(1);
+    if (cmp_types(value->type, "int")){
+        printf("%d\n", *((int*)value->data));
+    } else if (cmp_types(value->type, "double")){
+        printf("%f\n", *((double*)value->data));
+    } else if (cmp_types(value->type, "string")){
+        printf("%s\n", (char*)value->data);
+    } else {
+        fprintf(stderr, "Invalid type for print\n");
+        exit(1);
     }
     freeLiteral(value);
     return NULL;
@@ -159,7 +152,7 @@ void * interpret_VarDeclaration(Stmt* stmt){
     Literal* value;
 
     if (stmt -> stmt.var.initializer!= NULL ) value = evaluate(stmt->stmt.var.initializer);
-    else value = newLiteral(C_INT, (void*)0);
+    else value = newLiteral("int", (void*)0);
     Rvariable* var = newRvariable_from_Literal(tname, value);
     if (searchHT_var(interpreter.env->vars, var -> name)!=NULL){
         fprintf(stderr, "Variable %s already exists\n", (char*)var-> name->literal->data);
