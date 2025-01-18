@@ -120,17 +120,29 @@ Expr *expression(Parser* parser){
         parser->current = parser->current->next;
         if (expr->type == EXPR_VARIABLE){
             Token *token = expr->expr.variable.name;
-            expr = newAssignExpr(token, expression(parser));    
+            Expr* tmp;
+            tmp = newAssignExpr(token, expression(parser));
+            freeExpr(expr);
+            expr = tmp;    
         }
     }
     return expr;
 }
 
 Stmt *varDeclaration(Parser* parser){
-    Token *name = parser->current->data;
+    Token *type = parser->current->data;
+    Token *name = parser->current->next->data;
+    Expr *initializer = NULL;
+    Stmt* res;
+
     parser->current = parser->current->next->next;
-    Expr *initializer = expression(parser);
-    return newVarStmt(name, initializer);
+
+    if (parser->current->data->type == EQUAL){
+        parser->current = parser->current->next;
+        initializer = expression(parser);
+    }
+    res = newVarStmt(type, name, initializer);
+    return res;
 }
 
 Stmt *statement(Parser* parser){
@@ -138,7 +150,7 @@ Stmt *statement(Parser* parser){
         parser->current = parser->current->next;
         return newPrintStmt(expression(parser));
     }
-    if (match_type(parser,IDENTIFIER) && parser->current->next->data->type == EQUAL){
+    if (match_type(parser,TYPE) && parser->current->next->data->type == IDENTIFIER){
         return varDeclaration(parser);
     }
     return newExpressionStmt(expression(parser));

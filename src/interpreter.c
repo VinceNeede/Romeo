@@ -113,7 +113,7 @@ void* interpret_Binary(Expr* expr){
             rightv = *((double*)rightValue->data);
         }
         oper_double(value, leftv, rightv, operatorT->type);
-        res = newLiteral("doulbe", (void*)value);
+        res = newLiteral("double", (void*)value);
     }
     freeLiteral(leftValue);
     freeLiteral(rightValue);
@@ -149,18 +149,36 @@ void *interpret_Variable(Expr* expr){
 
 void * interpret_VarDeclaration(Stmt* stmt){
     Token* tname = stmt->stmt.var.name;
+    Token* type = stmt->stmt.var.type;
+    Expr* initializer = stmt->stmt.var.initializer;
+    Rtype* t = searchHT_Rtype(types, (char*)type->literal->data);
     Literal* value;
 
-    if (stmt -> stmt.var.initializer!= NULL ) value = evaluate(stmt->stmt.var.initializer);
-    else value = newLiteral("int", (void*)0);
-    Rvariable* var = newRvariable_from_Literal(tname, value);
-    if (searchHT_var(interpreter.env->vars, var -> name)!=NULL){
-        fprintf(stderr, "Variable %s already exists\n", (char*)var-> name->literal->data);
+    char * name = (char*)tname->literal->data;
+
+    if (t == NULL){
+        fprintf(stderr, "Type %s not found\n", (char*)type->literal->data);
         exit(1);
     }
+    if (searchHT_var(interpreter.env->vars, tname)!=NULL){
+        fprintf(stderr, "Variable %s already exists\n", name);
+        exit(1);
+    }
+    Rvariable *var;
+    if (initializer != NULL){
+        value = evaluate(initializer);
+        if (!cmp_types(t->name, value->type)){
+            fprintf(stderr, "Type mismatch\n");
+            exit(1);
+        }
+        var = newRvariable_from_Literal(tname, value);
+        free(value);
+    } else {
+        var = newRvariable(strdup(t->name), tname, malloc(t->size));
+    }
     addHT_var(interpreter.env->vars, var, 0);
-
-    free(value);
+    freeLiteral(type->literal);
+    // free(value);
     // free(tname->literal);           //either here or in newRvariable_from_Token
     return NULL;
 }
@@ -169,12 +187,26 @@ void * interpret_VarAssign(Expr* expr){
     Token* tname = expr->expr.assign.name;
     Literal* value = evaluate(expr->expr.assign.value);
     Rvariable* var = searchHT_var(interpreter.env->vars, tname);
+
     if (var == NULL){
-        fprintf(stderr, "Variable %s not found\n", (char*)tname->literal->data);
-        exit(1);
+        Literal * tmp = newLiteral("string",(void*)strdup(value->type));
+        Token *type = newToken(TYPE, value->type, tmp, tname->line);
+        Token *tvalue = newToken(TOKEN_EOF, "\0", value , 0);
+        Expr * literal_expr = newLiteralExpr(tvalue);
+        Stmt* stmt = newVarStmt(type, tname, literal_expr);
+        execute(stmt);
+        var = searchHT_var(interpreter.env->vars, tname);
+
+        freeToken(tvalue);
+        freeExpr(literal_expr);
+        free(stmt);
+        freeToken(type);
+    } else {
+        update_var_from_Literal(var, value);
+        freeLiteral(value);
+        freeLiteral(tname->literal);
     }
-    update_var_from_Literal(var, value);
-    return (void*)value;
+    return NULL;
 }
 
 void * interpret_Expr(Stmt* stmt){
