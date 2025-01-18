@@ -1,6 +1,6 @@
 // The scanner is responsible for reading the input file and returning a lsit of tokens.
 #include "scanner.h"
-#include "../lib/identifier.c"
+#include "../lib/keyword.c"
 
 Scanner* newScanner(const char* source) {
     Scanner* scanner = (Scanner*)malloc(sizeof(Scanner));
@@ -77,7 +77,7 @@ int isAlphaNumeric(char c) {
 }
 
 void literal_number(Scanner* scanner){
-    Rtype type = "int";
+    char *type = "int";
     while (isDigit(peek(scanner))) scanner->current++;
     if (peek(scanner) == '.' && isDigit(peekNext(scanner))) {
         type = "double";
@@ -104,10 +104,16 @@ void literal_identifier(Scanner* scanner){
     char* value = (char*)malloc(scanner->current - scanner->start + 1);
     strncpy(value, scanner->source + scanner->start, scanner->current - scanner->start);
     value[scanner->current - scanner->start] = '\0';
-    const struct identifier* id = get_identifier(value, scanner->current - scanner->start);
-    if (id != NULL){
-        addToken_toScanner(scanner, id->value, NULL);
+    //check if it is a keyword
+    const struct keyword* key = get_keyword(value, scanner->current - scanner->start);
+    if (key != NULL){
+        addToken_toScanner(scanner, key->value, NULL);
         free(value);
+        return;
+    }
+    Rtype *type = searchHT_Rtype(types, value);
+    if ( type != NULL){
+        addToken_toScanner(scanner, TYPE, newLiteral("string", (void*)value));
     }
     else{
         addToken_toScanner(scanner, IDENTIFIER, newLiteral("string", (void*)value));
