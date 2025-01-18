@@ -6,6 +6,7 @@
 #include "Expr.h"
 #include "Stmt.h"
 #include "LinkList_Stmt.h"
+#include "string_utilities.h"
 
 typedef struct {
     List_Token *list;
