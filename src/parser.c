@@ -211,6 +211,8 @@ Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
     List_Stmt *body;
     Stmt* stmt;
     List_string *args_types = newList_string();
+    int optional_args = 0;
+
     if (!match_type(parser, LEFT_PAREN)){
         fprintf(stderr, "Expect '(' after function name\n");
         exit(1);
@@ -226,6 +228,12 @@ Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
         stmt = statement(parser);
         if (stmt->type != STMT_VAR){
             fprintf(stderr, "Expect parameter declaration\n");
+            exit(1);
+        }
+        if (stmt->stmt.var.initializer != NULL){
+            optional_args++;
+        } else if (optional_args > 0){
+            fprintf(stderr, "Non-optional parameters cannot follow optional parameters\n");
             exit(1);
         }
         add_string(args_types, strdup((char*)stmt->stmt.var.type->literal->data));
@@ -248,6 +256,7 @@ Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
     key->type = FUNCTION;
     key->field.function.name = strdup((char*)name->literal->data);
     key->field.function.args_types = args_types;
+    key->field.function.non_optional_args = params->size - optional_args;
     freeLiteral(name->literal,1);
     name->literal = newLiteral("key_field", (void*)key,1);
     Literal *value = newLiteral("function", (void*)newCallable(params, body),1);
