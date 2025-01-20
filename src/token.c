@@ -57,6 +57,7 @@ void freeLiteral(Literal *literal, int free_data){
         else if (cmp_types(literal->type, "int")) free((int*)literal->data);
         else if (cmp_types(literal->type, "double")) free((double*)literal->data);
         else if (cmp_types(literal->type, "function")) freeCallable((Callable*)literal->data);
+        else if (cmp_types(literal->type, "key_field")) free_key_field((key_field*)literal->data);
         else fprintf(stderr, "cannot free void*\n");
     }
     if (literal->type != NULL) free(literal->type);
@@ -88,6 +89,19 @@ Literal *copyLiteral(Literal *literal){
         return newLiteral(literal->type, doubledup((double*)literal->data),1);
     } else if (cmp_types(literal->type, "function")){
         return newLiteral(literal->type, copyCallable((Callable*) literal->data),1);
+    } else if (cmp_types(literal->type, "key_field")){
+        key_field *copy = (key_field*)malloc(sizeof(key_field));
+        copy->type =((key_field*)literal->data)->type;
+        switch (copy->type){
+            case NAME:
+                copy->field.name = strdup(((key_field*)literal->data)->field.name);
+                break;
+            case FUNCTION:
+                copy->field.function.name = strdup(((key_field*)literal->data)->field.function.name);
+                copy->field.function.args_types = copyList_string(((key_field*)literal->data)->field.function.args_types);
+                break;
+        }
+        return newLiteral(literal->type, copy ,1);
     }
     return NULL;
 }
