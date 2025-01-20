@@ -1,0 +1,4 @@
+function pippo (int x, int y){
+    print (x+y)
+}
+pippo(2,3)

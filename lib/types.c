@@ -1,5 +1,6 @@
 #include "types.h"
 #include "string_utilities.h"
+#include "callable.h"
 
 HT_Rtype *types = NULL;
 
@@ -22,9 +23,11 @@ void update_types(Rtype *a, const Rtype *b){
 
 void types_init(){
     types = newHT_Rtype(MAX_TYPES, hash_types, cmp_types, update_types, freeRtype);
-    addHT_Rtype(types, newRtype("int",8),0);
-    addHT_Rtype(types, newRtype("double",8),0);
-    addHT_Rtype(types, newRtype("string",0),0); //to check
+    addHT_Rtype(types, newRtype("int",sizeof(int),0),0);
+    addHT_Rtype(types, newRtype("double",sizeof(double),0),0);
+    addHT_Rtype(types, newRtype("string",0,0),0); //to check
+    addHT_Rtype(types, newRtype("bool",1,0),0);
+    addHT_Rtype(types, newRtype("function",sizeof(Callable),1),0);
 }
 
 void free_types(){

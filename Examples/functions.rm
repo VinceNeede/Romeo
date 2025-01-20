@@ -1,0 +1,11 @@
+x=10
+k=3
+function foo (int x, int y, int z = 3){
+    x = x + 3
+    function pippo(){
+        print(x+y+z-k)
+    }
+    pippo()
+}
+foo(x,3,4)
+print(x)

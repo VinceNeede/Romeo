@@ -1,0 +1,17 @@
+#ifndef CALLABLE_H
+#define CALLABLE_H
+#include "types.h"
+#include "LinkList_Literal.h"
+#include "LinkList_Stmt.h"
+#include "interpreter.h"
+
+typedef struct Callable{
+    List_Stmt* params;
+    List_Stmt* body;
+} Callable;
+
+Callable *newCallable(List_Stmt*, List_Stmt *);
+Callable *newCallable_from_literal(Literal*);
+void freeCallable(Callable *callable);
+Literal * execute_callable(Callable *, Interpreter *, List_Literal*);
+#endif //CALLABLE_H

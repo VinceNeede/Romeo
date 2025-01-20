@@ -2,10 +2,10 @@
 #include "scanner.h"
 #include "../lib/keyword.c"
 
-Scanner* newScanner(const char* source) {
+Scanner* newScanner() {
     Scanner* scanner = (Scanner*)malloc(sizeof(Scanner));
-    scanner->source = source;
-    scanner->source_length = strlen(source);
+    scanner->source = NULL;
+    scanner->source_length =0;
     scanner->start = 0;
     scanner->current = 0;
     scanner->line = 1;
@@ -14,8 +14,40 @@ Scanner* newScanner(const char* source) {
 }
 
 void freeScanner(Scanner* scanner) {
-    freeList_Token(scanner->tokens);
+    free(scanner->source);
+    Node_Token *current = scanner->tokens->head;
+    Node_Token *next;
+    while (current != NULL){
+        next = current->next;
+        current->data->is_copy = 1;
+        freeToken(current->data);
+        free(current);
+        current = next;
+    }
+    free(scanner->tokens);
     free(scanner);
+}
+
+void set_source(Scanner* scanner, const char* source){
+    if (scanner->source == NULL) {
+        scanner->source_length = strlen(source);
+        scanner->source = malloc(scanner->source_length + 1);
+        if (scanner->source == NULL) {
+            // Handle memory allocation failure
+            fprintf(stderr, "Memory allocation failed\n");
+            exit(1);
+        }
+        strcpy(scanner->source, source);
+    } else {
+        scanner->source_length += strlen(source);
+        scanner->source = realloc(scanner->source, scanner->source_length + 1);
+        if (scanner->source == NULL) {
+            // Handle memory allocation failure
+            fprintf(stderr, "Memory allocation failed\n");
+            exit(1);
+        }
+        strcat(scanner->source, source);
+    }
 }
 
 int isAtEnd(Scanner* scanner) {
@@ -42,7 +74,7 @@ void addToken_toScanner(Scanner* scanner, TokenType type, Literal* literal) {
     char* lexeme = (char*)malloc(scanner->current - scanner->start + 1);
     strncpy(lexeme, scanner->source + scanner->start, scanner->current - scanner->start);
     lexeme[scanner->current - scanner->start] = '\0';
-    add_Token(scanner->tokens, newToken(type, lexeme, literal, scanner->line));
+    add_Token(scanner->tokens, newToken(type, lexeme, literal, scanner->line,0));
     free(lexeme);
 }
 
@@ -61,7 +93,7 @@ void literal_string(Scanner* scanner){
     //trim surrounding quotes
     strncpy(value, scanner->source + scanner->start + 1, scanner->current - scanner->start - 2);
     value[scanner->current - scanner->start - 2] = '\0';
-    addToken_toScanner(scanner, STRING, newLiteral("string", value));
+    addToken_toScanner(scanner, STRING, newLiteral("string", value, 1));
 }
 
 int isDigit(char c) {
@@ -87,14 +119,17 @@ void literal_number(Scanner* scanner){
     char* value = (char*)malloc(scanner->current - scanner->start + 1);
     strncpy(value, scanner->source + scanner->start, scanner->current - scanner->start);
     value[scanner->current - scanner->start] = '\0';
+    Literal *tmp;
     if (strcmp(type, "int") == 0){
         int* intValue = (int*)malloc(sizeof(int));
         *intValue = atoi(value);
-        addToken_toScanner(scanner, NUMBER, newLiteral(type, (void*)intValue));
+        tmp = newLiteral(type, (void*)intValue,1);
+        printf("allocated literal number in %p\n", tmp);
+        addToken_toScanner(scanner, NUMBER, tmp);
     } else {
         double* doubleValue = (double*)malloc(sizeof(double));
         *doubleValue = atof(value);
-        addToken_toScanner(scanner, NUMBER, newLiteral(type, (void*)doubleValue));
+        addToken_toScanner(scanner, NUMBER, newLiteral(type, (void*)doubleValue,1));
     }
     free(value);
 }
@@ -113,10 +148,11 @@ void literal_identifier(Scanner* scanner){
     }
     Rtype *type = searchHT_Rtype(types, value);
     if ( type != NULL){
-        addToken_toScanner(scanner, TYPE, newLiteral("string", (void*)value));
+        Literal *tmp =newLiteral("string", (void*)value,1);
+        addToken_toScanner(scanner, TYPE, tmp);
     }
     else{
-        addToken_toScanner(scanner, IDENTIFIER, newLiteral("string", (void*)value));
+        addToken_toScanner(scanner, IDENTIFIER, newLiteral("string", (void*)value,1));
     }
 }
 
@@ -179,7 +215,7 @@ List_Token* scanTokens(Scanner* scanner) {
         scanner->start = scanner->current;
         scanToken(scanner);
     }
-    add_Token(scanner->tokens, newToken(TOKEN_EOF, "", NULL, scanner->line));
+    add_Token(scanner->tokens, newToken(TOKEN_EOF, "", NULL, scanner->line,0));
     return scanner->tokens;
 }
 

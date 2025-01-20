@@ -7,6 +7,8 @@
 #include "Stmt.h"
 #include "LinkList_Stmt.h"
 #include "string_utilities.h"
+#include "LinkList_Expr.h"
+#include "callable.h"
 
 typedef struct {
     List_Token *list;

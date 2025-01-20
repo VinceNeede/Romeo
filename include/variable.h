@@ -1,3 +1,5 @@
+#ifndef VARIABLE_H
+#define VARIABLE_H
 #include "types.h"
 #include "token.h"
 
@@ -15,3 +17,5 @@ int *get_int_var(Rvariable* var);
 double *get_double_var(Rvariable* var);
 char *get_string_var(Rvariable* var);
 Literal *var_to_literal(Rvariable* var);
+Rvariable *copyvar(Rvariable *var);
+#endif // VARIABLE_H
