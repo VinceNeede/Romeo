@@ -1,0 +1,14 @@
+int x = 3
+function foo(int x, int y, int offset = 1){
+    print (x+y+offset)
+}
+function foo (double x, double y){
+    x = x+2.3
+    function pippo(){
+        print (x-y)        
+    }
+    pippo()
+}
+foo(2,x)
+foo(2.0,3.0)
+foo(3,4,2)
