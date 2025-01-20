@@ -18,24 +18,26 @@ size_t hash_var(const key_field * key){
     return hash;
 }
 
-int cmp_var (const key_field* key1, const key_field* key2){
-    if (key1->type != key2->type) return 0;
-    switch (key1->type){
+int cmp_var (const key_field* ht_key, const key_field* cmp_key){
+    if (ht_key->type != cmp_key->type) return 0;
+    switch (ht_key->type){
         case FUNCTION:
-            int cmp_names = strcmp((const char*)key1->field.function.name, (const char*)key2->field.function.name);
+            int cmp_names = strcmp((const char*)ht_key->field.function.name, (const char*)cmp_key->field.function.name);
             if (cmp_names) return 0;
-            List_string *args1 = key1->field.function.args_types;
-            List_string *args2 = key2->field.function.args_types;
-            if (args1->size != args2->size) return 0;
+            List_string *args1 = ht_key->field.function.args_types;
+            List_string *args2 = cmp_key->field.function.args_types;
+            if (ht_key->field.function.non_optional_args > args2->size) return 0;
             Node_string *current1 = args1->head;
             Node_string *current2 = args2->head;
-            while (current1 != NULL && !strcmp(current1->data, current2->data)){
+            int i = 0;
+            while (current2 != NULL && !strcmp(current1->data, current2->data)){
                 current1 = current1->next;
                 current2 = current2->next;
+                i++;
             }
-            return current1 == NULL;
+            return i >= ht_key->field.function.non_optional_args;
         case NAME:
-            return strcmp((const char*)key1->field.name, (const char*)key2->field.name) == 0;
+            return strcmp((const char*)ht_key->field.name, (const char*)cmp_key->field.name) == 0;
     }
     return 0;
 }
