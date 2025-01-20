@@ -8,4 +8,5 @@ function foo (int x, int y, int z = 3){
     pippo()
 }
 foo(x,3,4)
+foo(x-3,2)
 print(x)
