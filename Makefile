@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -g -Wall -Wextra -Wno-missing-field-initializers -Wno-switch
+CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -Wno-switch
 INCLUDES = -Iinclude 
-OUT_FOLDER =./# ~/.local/local_bin/
+OUT_FOLDER = ~/.local/local_bin/
 
 all: build_lib $(OUT_FOLDER)Romeo
 
