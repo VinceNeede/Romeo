@@ -1,7 +1,16 @@
 #include "environment.h"
+#include "LinkList_string.h"
 
-size_t hash_var(const Token * key){
-    const char * key_str = (const char*)key->literal->data;
+size_t hash_var(const key_field * key){    
+    const char * key_str;
+    switch (key->type){
+        case FUNCTION:
+            key_str = (const char*)key->field.function.name;
+            break;
+        case NAME:
+            key_str = (const char*)key->field.name;
+            break;
+    }
     size_t hash = 0;
     for (int i = 0; key_str[i] != '\0'; i++){
         hash = 31 * hash + key_str[i];
@@ -9,8 +18,28 @@ size_t hash_var(const Token * key){
     return hash;
 }
 
-int cmp_var (const Token * key1, const Token * key2){
-    return strcmp((const char*)key1->literal->data, (const char*)key2->literal->data) == 0;
+int cmp_var (const key_field* ht_key, const key_field* cmp_key){
+    if (ht_key->type != cmp_key->type) return 0;
+    switch (ht_key->type){
+        case FUNCTION:
+            int cmp_names = strcmp((const char*)ht_key->field.function.name, (const char*)cmp_key->field.function.name);
+            if (cmp_names) return 0;
+            List_string *args1 = ht_key->field.function.args_types;
+            List_string *args2 = cmp_key->field.function.args_types;
+            if (ht_key->field.function.non_optional_args > args2->size) return 0;
+            Node_string *current1 = args1->head;
+            Node_string *current2 = args2->head;
+            int i = 0;
+            while (current2 != NULL && !strcmp(current1->data, current2->data)){
+                current1 = current1->next;
+                current2 = current2->next;
+                i++;
+            }
+            return i >= ht_key->field.function.non_optional_args;
+        case NAME:
+            return strcmp((const char*)ht_key->field.name, (const char*)cmp_key->field.name) == 0;
+    }
+    return 0;
 }
 
 void update_var_from_Literal(Rvariable* old, const Literal* new){
@@ -35,10 +64,27 @@ Environment * newEnvironment(Environment* enclosing){
     return env;
 }
 
-Rvariable* get_var(Environment* env, const Token* key){
-    Rvariable* var = searchHT_var(env->vars, key);
-    if (var != NULL) return var;
-    if (env->enclosing != NULL) return get_var(env->enclosing, key);
+Rvariable* get_var(Environment* env, Token* Tkey, int recurse){
+    Rvariable* var;
+    key_field* key;
+    if (strcmp(Tkey->literal->type, "key_field") == 0)
+        key = (key_field*)Tkey->literal->data;
+    else {  // assume it is a name
+        key = (key_field*)malloc(sizeof(key_field));
+        key->type = NAME;
+        key->field.name = strdup(Tkey->lexeme);
+        freeLiteral(Tkey->literal,1);
+        Tkey->literal = newLiteral("key_field", (void*)key,1);
+    }
+    var = searchHT_var(env->vars, key);
+    if (var != NULL){
+        if (var->key->type != key->type){
+            fprintf(stderr, "Error: key type mismatch\n");
+            exit(1);
+        }
+        return var;
+    }
+    if (env->enclosing != NULL && recurse) return get_var(env->enclosing, Tkey, recurse);
     return NULL;
 }
 

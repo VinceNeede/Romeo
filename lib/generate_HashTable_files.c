@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
             "\tint size;\n"
             "\tint count;\n"
             "\tsize_t (*hash)(const %s);\n"
-            "\tint (*cmp)(const %s, const %s);\n"
+            "\tint (*cmp)(const %s hask_key, const %s cmp_key);\n"
             "\tvoid (*update)(%s, const %s);\n"
             "\t void (*free_item)(%s);\n"
             "}HT_%s;\n",

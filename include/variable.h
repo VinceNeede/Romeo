@@ -5,12 +5,12 @@
 
 typedef struct{
     char* type;
-    const Token *name;     // can become a token
+    key_field *key;     // can become a token
     void *pos;
 } Rvariable;
 
-Rvariable *newRvariable(char* type, const Token *name, void *pos);
-Rvariable *newRvariable_from_Literal(const Token* tname, const Literal* lit);
+Rvariable *newRvariable(char* type, key_field* key, void *pos);
+// Rvariable *newRvariable_from_Literal(key_field* key, const Literal* lit);
 void freeRvariable(Rvariable *var);
 
 int *get_int_var(Rvariable* var);

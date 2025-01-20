@@ -2,10 +2,10 @@
 #include "callable.h"
 #include <string.h>
 
-Rvariable *newRvariable(char* type, const Token *name, void *pos){
+Rvariable *newRvariable(char* type, key_field *key, void *pos){
     Rvariable *var = (Rvariable*)malloc(sizeof(Rvariable));
     var->type = strdup(type);
-    var->name = copyToken(name);
+    var->key = key;
     var->pos = pos;
     return var;
 }
@@ -15,10 +15,7 @@ void freeRvariable(Rvariable *var){
     // fprintf(stderr, "Not implemented\n");
     if (var == NULL) return;
 
-    if (var->name != NULL){
-        freeLiteral(var->name->literal,1);
-        freeToken((Token*)var->name); //cast away the const qualifier
-    }
+    if (var->key != NULL) free_key_field(var->key);
 
     if (cmp_types(var->type, "string")) free((char*)var->pos);
     else if (cmp_types(var->type, "int")) free((int*)var->pos);
@@ -27,14 +24,12 @@ void freeRvariable(Rvariable *var){
 
     if (var->type != NULL) free(var->type);
 
-    // else
-    // if (var->pos != NULL) free(var->pos);
     free(var);
 }
 
-Rvariable *newRvariable_from_Literal(const Token* tname, const Literal* lit){
-    return newRvariable(lit->type, tname, lit->data);
-}
+// Rvariable *newRvariable_from_Literal(const Token* tname, const Literal* lit){
+//     return newRvariable(lit->type, tname, lit->data);
+// }
 
 int *get_int_var(Rvariable* var){
     return (int*)var->pos;

@@ -1,6 +1,7 @@
 #include "interpreter.h"
 #include "environment.h"
 #include "callable.h"
+#include "LinkList_string.h"
 
 Interpreter interpreter;
 
@@ -118,29 +119,33 @@ void* interpret_Binary(Expr* expr){
 }
 
 void * interpret_Call(Expr* expr){
-    Literal * callee = evaluate(expr->expr.call.callee);
+    Literal * callee; 
     List_Expr * arguments = expr->expr.call.arguments;
     List_Literal * args = newList_Literal();
 
     Node_Expr * current = arguments->head;
+    List_string * args_types = newList_string();
+    Literal * arg;
+
     while (current != NULL){
-        add_Literal(args, evaluate(current->data));
+        arg = evaluate(current->data);
+        add_Literal(args, arg);
+        add_string(args_types, strdup(arg->type));
         current = current->next;
     }
+    
+    key_field *key = (key_field*)malloc(sizeof(key_field));
+    key->type = FUNCTION;
+    key->field.function.name = strdup(expr->expr.call.callee->expr.variable.name->lexeme);
+    key->field.function.args_types = args_types;
+    key->field.function.non_optional_args = args->size;
+    freeLiteral(expr->expr.call.callee->expr.variable.name->literal,1);
+    expr->expr.call.callee->expr.variable.name->literal = newLiteral("key_field", (void*)key,1);
+    callee = evaluate(expr->expr.call.callee);
+
     Callable * function = literal_as_Callable(callee);
     Literal * res = execute_callable(function, &interpreter, args);
 
-    // Node_Literal * current_literal = args->head;
-    // Node_Literal * next;
-    // while (current_literal != NULL){
-    //     next = current_literal->next;
-    //     printf("freeing inn pos %p\n", current_literal->data);
-    //     // freeLiteral(current_literal->data);
-    //     // free(current_literal);
-    //     current_literal = next;
-    // }
-    // free((char*)callee->type);
-    // free(callee);
     freeLiteral(callee,0);
 
     Node_Literal * current_literal = args->head;
@@ -151,9 +156,6 @@ void * interpret_Call(Expr* expr){
         current_literal = next;
     }
     free(args);
-    // freeCallable(function);
-    // freeList_Literal(args);
-    // freeCallable(function); //free the Callable?
     return NULL;//(void*)res;
 }
 
@@ -175,7 +177,7 @@ void * interpret_Print(Stmt* stmt){
 
 void *interpret_Variable(Expr* expr){
     Token* tname = expr->expr.variable.name;
-    Rvariable* var = get_var(interpreter.env, tname);
+    Rvariable* var = get_var(interpreter.env, tname, 1);
     if (var == NULL){
         fprintf(stderr, "Variable %s not found\n", (char*)tname->literal->data);
         exit(1);
@@ -190,17 +192,20 @@ void * interpret_VarDeclaration(Stmt* stmt){
     Expr* initializer = stmt->stmt.var.initializer;
     Rtype* t = searchHT_Rtype(types, (char*)type->literal->data);
 
-    char * name = (char*)tname->literal->data;
+    char * name = tname->lexeme;
 
     if (t == NULL){
         fprintf(stderr, "Type %s not found\n", (char*)type->literal->data);
         exit(1);
     }
-    if (searchHT_var(interpreter.env->vars, tname)!=NULL){
-        fprintf(stderr, "Variable %s already exists\n", name);
+    if (get_var(interpreter.env, tname, 0)!=NULL){
+        fprintf(stderr, "Variable %s already exists in this scope\n", name);
         exit(1);
     }
-    Rvariable *var = newRvariable(t->name, tname, malloc(t->size));
+    if (strcmp(tname->literal->type, "key_field") != 0){
+        fprintf(stderr, "Invalid key_field for variable %s\n", name);
+    }
+    Rvariable *var = newRvariable(t->name,(key_field*)tname->literal->data, malloc(t->size));
 
     addHT_var(interpreter.env->vars, var, 0);
     if (initializer != NULL){
@@ -210,8 +215,9 @@ void * interpret_VarDeclaration(Stmt* stmt){
         free(value->type);
         free(value);
     }
-    freeLiteral(tname->literal,0);
     freeLiteral(type->literal,1);
+    free(tname->literal->type);
+    free(tname->literal);
     // free(value);
     return NULL;
 }
@@ -219,12 +225,28 @@ void * interpret_VarDeclaration(Stmt* stmt){
 void * interpret_VarAssign(Expr* expr){
     Token* tname = expr->expr.assign.name;
     Literal* value = evaluate(expr->expr.assign.value);
-    Rvariable* var = get_var(interpreter.env, tname);
+    Rvariable* var = get_var(interpreter.env, tname, 1);
 
     if (var == NULL){
+        Rtype *rtype = searchHT_Rtype(types, value->type);
+        key_field *key = (key_field*)malloc(sizeof(key_field));
+        key->type = rtype->key_type;
+        switch (key->type){
+            case NAME:
+                key->field.name = strdup(tname->lexeme);
+                break;
+            case FUNCTION:
+                key->field.function.name = strdup(tname->lexeme);
+                key->field.function.args_types = NULL;
+                break;
+        }
+        freeLiteral(tname->literal,1);
+        tname->literal = newLiteral("key_field", (void*)key,1);
+
         Literal * tmp = newLiteral("string", strdup(value->type),1);
         Token *type = newToken(TYPE, value->type, tmp, tname->line,1);
         Expr * literal_expr = newLiteralExpr(value);
+
         Stmt* stmt = newVarStmt(type, tname, literal_expr);
         execute(stmt);
 
