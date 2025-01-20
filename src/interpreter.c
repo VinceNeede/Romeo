@@ -205,7 +205,11 @@ void * interpret_VarDeclaration(Stmt* stmt){
     if (strcmp(tname->literal->type, "key_field") != 0){
         fprintf(stderr, "Invalid key_field for variable %s\n", name);
     }
-    Rvariable *var = newRvariable(t->name,(key_field*)tname->literal->data, malloc(t->size));
+    Rvariable *var;
+    if (t->size == 0)
+        var = newRvariable(t->name,(key_field*)tname->literal->data, NULL);
+    else
+        var = newRvariable(t->name,(key_field*)tname->literal->data, malloc(t->size));
 
     addHT_var(interpreter.env->vars, var, 0);
     if (initializer != NULL){

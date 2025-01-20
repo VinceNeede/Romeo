@@ -53,6 +53,15 @@ void update_var_from_Literal(Rvariable* old, const Literal* new){
         fprintf(stderr, "Error: type %s not found\n",old->type);
         exit(1);
     }
+    if (strcmp(t->name,"string")  == 0){
+        size_t size =  strlen((char*)new->data);
+        old->pos = realloc(old->pos, size + 1);
+        strcpy(old->pos, (char*)new->data);
+        ((char*)old->pos)[size] = '\0';
+        return;
+    }
+    if (t->size == 0) fprintf(stderr, "Error: type %s is not implemented fully\n",old->type);
+     
     memcpy(old->pos, new->data, t->size);
 }
 
