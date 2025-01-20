@@ -138,6 +138,7 @@ void * interpret_Call(Expr* expr){
     key->type = FUNCTION;
     key->field.function.name = strdup(expr->expr.call.callee->expr.variable.name->lexeme);
     key->field.function.args_types = args_types;
+    key->field.function.non_optional_args = args->size;
     freeLiteral(expr->expr.call.callee->expr.variable.name->literal,1);
     expr->expr.call.callee->expr.variable.name->literal = newLiteral("key_field", (void*)key,1);
     callee = evaluate(expr->expr.call.callee);
