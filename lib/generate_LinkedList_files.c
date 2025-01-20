@@ -11,13 +11,16 @@ void print_help(char *name) {
               "  -s <subfix>\t\tSubfix to append to the file names\n"
               "  -t <type>\t\tType of the data to store\n"
               "  -f <free function>\tFunction to free the data, must be contained in the headers\n"
+              "  -a adds a bool controller to free functions"
+            //   "  -c <copy function>\tFunction to copy the data, must be contained in the headers\n"
               "  -u\t\t\tUse user defined data type, if -f is not selected, it is selected as \"free<subfix>\"\n"
+            //   "     if -c is not selected, it is selected as \"copy<subfix>\"\n"
               "  -I <headers to include>\tHeaders to include in the header file\n"
               , name);
 }
 
 int usage(int argc, char *argv[], char **header_dir, char **src_dir, char **subfix, char **type,
-        char** free_fun, char*** headers, int* n_headers, int* is_u_def) {
+        char** free_fun, char **copy_fun, char*** headers, int* n_headers, int* is_u_def, int *add_to_free) {
     int i=0;
     for (i=0; i<argc; i++) {
         if (argv[i][0]=='-'){
@@ -39,6 +42,12 @@ int usage(int argc, char *argv[], char **header_dir, char **src_dir, char **subf
                 break;
             case 'f':
                 *free_fun = argv[i+1];
+                break;
+            case 'c':
+                *copy_fun = argv[i+1];
+                break;
+            case 'a':
+                *add_to_free = 1;
                 break;
             case 'I':
                 i++;
@@ -64,11 +73,12 @@ int usage(int argc, char *argv[], char **header_dir, char **src_dir, char **subf
 
 
 int main(int argc, char *argv[]) {
-    int is_user_defined=0;
-    char *header_dir, *src_dir, *subfix, *type, *free_fun, **headers;
+    int is_user_defined=0, add_free=0;
+    char *header_dir, *src_dir, *subfix, *type, *free_fun, *copy_fun, **headers;
     int n_headers=0;
-    header_dir = src_dir = subfix = type = free_fun = NULL;
-    if (usage(argc, argv, &header_dir, &src_dir, &subfix, &type, &free_fun, &headers, &n_headers, &is_user_defined)) return 1;
+    header_dir = src_dir = subfix = type = free_fun = copy_fun = NULL;
+    if (usage(argc, argv, &header_dir, &src_dir, &subfix, &type, &free_fun, &copy_fun, 
+    &headers, &n_headers, &is_user_defined, &add_free)) return 1;
 
     if (header_dir == NULL && src_dir == NULL)
         src_dir=header_dir = ".";
@@ -105,23 +115,36 @@ int main(int argc, char *argv[]) {
             "    struct node_%s *next;\n"
             "} Node_%s;\n"
             "\n"
-            "Node_%s* newNode_%s(%s data);\n"
-            "void freeNode_%s(Node_%s *node);\n"
+            "Node_%s* newNode_%s(%s data);\n",subfix, type, subfix, subfix,
+            subfix, subfix, type);
+    fprintf(header,
             "\n"
             "typedef struct List_%s {\n"
             "    Node_%s *head;\n"
+            "    Node_%s *tail;\n"
             "    int size;\n"
             "} List_%s;\n"
             "\n"
             "List_%s* newList_%s();\n"
             "void add_%s(List_%s *list, %s data);\n"
             "%s getIndex_%s(List_%s *list, int index);\n"
-            "void freeList_%s(List_%s *list);\n"
+            "List_%s* copyList_%s(List_%s *list);\n"
             "#endif // LINKLIST_%s_H\n",
-            subfix, type, subfix, subfix,
-            subfix, subfix, type, subfix, subfix,
+            subfix, subfix,
+            subfix, subfix,
+            subfix, subfix, subfix, subfix, type, type,
+            subfix, subfix, 
             subfix, subfix, subfix,
-            subfix, subfix, subfix, subfix, type, type, subfix, subfix, subfix, subfix, subfix);
+            subfix);
+
+    if (add_free)
+        fprintf(header,
+            "void freeNode_%s(Node_%s *node, int control);\n"
+            "void freeList_%s(List_%s *list, int control);\n", subfix, subfix, subfix, subfix);
+    else
+        fprintf(header,
+            "void freeNode_%s(Node_%s *node);\n"
+            "void freeList_%s(List_%s *list);\n", subfix, subfix, subfix, subfix);
 
     fprintf(src,
             "#include <stdio.h>\n"
@@ -138,21 +161,33 @@ int main(int argc, char *argv[]) {
             "    node->next = NULL;\n"
             "    return node;\n"
             "}\n"
-            "\n"
-            "void freeNode_%s(Node_%s *node) {\n",
+            "\n",
             subfix,
             subfix, subfix, type,
-            subfix, subfix, subfix,
-            subfix, subfix);
+            subfix, subfix, subfix);
+    if (add_free)
+        fprintf(src,             "void freeNode_%s(Node_%s *node, int control) {\n",subfix, subfix);
+    else
+        fprintf(src,             "void freeNode_%s(Node_%s *node) {\n",subfix, subfix);
+
+    char tmp[100];
+    if (add_free){
+        sprintf(tmp, ", control");
+    }
+    else{
+        tmp[0]='\0';
+    }
     if (is_user_defined) {
         if (free_fun == NULL)
-            fprintf(src,"    free%s(node->data);\n", subfix);
+            fprintf(src,"    if(node->data!=NULL) free%s(node->data%s);\n", subfix,tmp);
         else
-            fprintf(src,"    %s(node->data);\n", free_fun);
+            fprintf(src,"    if(node->data!=NULL) %s(node->data%s);\n", free_fun,tmp);
     } else if (free_fun != NULL)
-        fprintf(src,"    %s(node->data);\n", free_fun);
+        fprintf(src,"    if(node->data!=NULL) %s(node->data%s);\n", free_fun,tmp);
 
     // if (is_struct) fprintf(src,"    free%s(node->data);\n", subfix);
+
+
     fprintf(src,"    free(node);\n"
             "}\n"
             "\n"
@@ -163,20 +198,19 @@ int main(int argc, char *argv[]) {
             "        exit(1);\n"
             "    }\n"
             "    list->head = NULL;\n"
+            "    list->tail = NULL;\n"
             "    list->size = 0;\n"
             "    return list;\n"
             "}\n"
             "\n"
             "void add_%s(List_%s *list, %s data) {\n"
             "    Node_%s *node = newNode_%s(data);\n"
-            "    if (list->head == NULL) {\n"
+            "    if (list->tail == NULL) {\n"
             "        list->head = node;\n"
+            "        list->tail = list->head;\n"
             "    } else {\n"
-            "        Node_%s *current = list->head;\n"
-            "        while (current->next != NULL) {\n"
-            "            current = current->next;\n"
-            "        }\n"
-            "        current->next = node;\n"
+            "        list->tail->next = node;\n"
+            "        list->tail = list->tail->next;\n"
             "    }\n"
             "    list->size++;\n"
             "}\n"
@@ -192,22 +226,53 @@ int main(int argc, char *argv[]) {
             "    }\n"
             "    return current->data;\n"
             "}\n"
-            "\n"
-            "void freeList_%s(List_%s *list) {\n"
+            "\n",            
+            subfix, subfix,
+            subfix, subfix, subfix,
+            subfix, subfix, type,
+            subfix, subfix, 
+            type, subfix, subfix, 
+            subfix);
+
+    if (add_free){
+        fprintf(src,"void freeList_%s(List_%s *list, int control) {\n", subfix, subfix);
+        sprintf(tmp, ", control");
+    }else{
+        fprintf(src,"void freeList_%s(List_%s *list) {\n", subfix, subfix);
+        tmp[0]='\0';
+    }
+    fprintf(src,
             "    Node_%s *current = list->head;\n"
             "    while (current != NULL) {\n"
             "        Node_%s *next = current->next;\n"
-            "        freeNode_%s(current);\n"
+            "        freeNode_%s(current%s);\n"
             "        current = next;\n"
             "    }\n"
             "    free(list);\n"
             "}\n",
-            subfix, subfix,
-            subfix, subfix, subfix,
-            subfix, subfix, type,
-            subfix, subfix, subfix, type, 
-            subfix, subfix, subfix, subfix, subfix, subfix, subfix, subfix
-            );
+            subfix, 
+            subfix, subfix, tmp);
+
+    // implement copyList_<subfix>
+    fprintf(src,
+                "List_%s* copyList_%s(List_%s *list){\n"
+                "    List_%s *new_list = newList_%s();\n"
+                "    Node_%s *current = list->head;\n"
+                "    while (current != NULL){\n", 
+                subfix, subfix, subfix, 
+                subfix, subfix, subfix);
+    if (is_user_defined && copy_fun == NULL)
+            fprintf(src,"        add_%s(new_list, copy%s(current->data));\n", subfix, subfix);
+    else if (copy_fun != NULL)
+            fprintf(src,"        add_%s(new_list, %s(current->data));\n", subfix, copy_fun);
+    else
+            fprintf(src,"        add_%s(new_list, current->data);\n", subfix);
+    fprintf(src,
+                "        current = current->next;\n"
+                "    }\n"
+                "    return new_list;\n"
+                "}\n");
+
 
     fclose(header);
     fclose(src);

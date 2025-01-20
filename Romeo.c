@@ -35,29 +35,22 @@ char* readFile(const char *path) {
     return content;
 }
 
-void run (char* source){
-    Scanner* scanner;
-    Parser *parser;
-    List_Stmt* stmts;
-    
-    scanner = newScanner(source);
+void run (char* source, Scanner *scanner, Parser *parser){
+    List_Stmt *stmts;
+    set_source(scanner, source);
     scanTokens(scanner);
-    parser = newParser(scanner->tokens);
     stmts = parse(parser);
     Interpret(stmts);
-
-    freeScanner(scanner);
-    freeParser(parser);
-    freeList_Stmt(stmts);
+    freeList_Stmt(stmts, 0);
 }
 
-void runFile(char *path){
+void runFile(char *path, Scanner *scanner, Parser *parser){
     char *source = readFile(path);
-    run(source);
+    run(source, scanner, parser);
     free(source);
 }
 
-void runPrompt(){
+void runPrompt(Scanner *scanner, Parser *parser){
     char *line = NULL;
     size_t len = 0;
     size_t read;
@@ -67,7 +60,8 @@ void runPrompt(){
         read = getline(&line, &len, stdin);
         if (read == (size_t)-1) break;
         if (strcmp(line, "exit\n")==0) break;
-        run(line);
+        run(line, scanner, parser);
+        scanner->line++;
     }
     free(line);
 }
@@ -77,13 +71,21 @@ int main(int argc, char *argv[]){
         printf("Usage: %s [source_file]\n", argv[0]);
         return 1;
     }
+    Scanner* scanner;
+    Parser* parser;
+    
+    scanner = newScanner();
+    parser = newParser(scanner->tokens);
     types_init();
     interpreter_init();
 
-    if(argc==2) runFile(argv[1]);
-    else runPrompt();
+    if(argc==2) runFile(argv[1], scanner, parser);
+    else runPrompt(scanner, parser);
 
+    freeParser(parser);
     freeInterpreter();
+    freeScanner(scanner);
     free_types();
+
     return 0;
 }

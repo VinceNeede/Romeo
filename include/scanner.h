@@ -3,14 +3,15 @@
 #include <string.h>
 
 typedef struct Scanner {
-    const char* source;
-    int source_length;
-    int start;
-    int current;
+    char* source;
+    size_t source_length;
+    size_t start;
+    size_t current;
     int line;
     List_Token* tokens;
 } Scanner;
 
-Scanner* newScanner(const char* source);
+Scanner* newScanner();
+void set_source(Scanner* scanner, const char* source);
 void freeScanner(Scanner* scanner);
 List_Token* scanTokens(Scanner* scanner);

@@ -205,13 +205,13 @@ int main(int argc, char *argv[]) {
 					"\twhile(current != NULL && ! %s) {\n"
 					"\t\tcurrent = current -> next;\n"
 					"\t}\n"
-					"\tif(current == NULL) current = newNode_%s(item);\n"
-					"\telse if (ht->update != NULL && can_update) %s;\n"
+					"\tif(current == NULL) add_%s(ht->overflow_buckets[index], item);\n"
+					"\telse if (ht->update != NULL && can_update) ht->update(current->data,item);\n"
 					"}\n",
 			subfix, subfix, type, 
 			subfix,
 			tmp,
-			subfix, tmp);
+			subfix);
 
 
     // define HT_subfix_insert

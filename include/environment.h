@@ -1,3 +1,5 @@
+#ifndef ENVIRONMENT_H
+#define ENVIRONMENT_H
 #include "HT_var.h"
 #include "types.h"
 #include "token.h"
@@ -16,3 +18,4 @@ void freeEnvironment(Environment* env);
 void update_var_from_Literal(Rvariable* old, const Literal* new);
 void interpreter_init();
 Rvariable* get_var(Environment* env, const Token* key);
+#endif // ENVIRONMENT_H

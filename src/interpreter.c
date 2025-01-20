@@ -1,11 +1,8 @@
 #include "interpreter.h"
 #include "environment.h"
+#include "callable.h"
 
-struct {
-    ExprVisitor* expr_visitor;
-    StmtVisitor* stmt_visitor;
-    Environment* env;
-} interpreter;
+Interpreter interpreter;
 
 Literal *evaluate(Expr* expr){
     return (Literal *)ExprAccept(interpreter.expr_visitor, expr);
@@ -17,7 +14,7 @@ void execute(Stmt* stmt){
 }
 
 void* interpret_Literal(Expr* expr){
-    return (void*)expr->expr.literal.value->literal;
+    return (void*)expr->expr.literal.value;
 }
 
 void* interpret_Grouping(Expr* expr){
@@ -35,11 +32,11 @@ void* interpret_Unary(Expr* expr){
             if (cmp_types(rightValue->type, "int")){
                 int * value = (int*)malloc(sizeof(int));
                 *value = -1 * (*((int*)rightValue->data));
-                res = newLiteral("int", (void*)value);
+                res = newLiteral("int", (void*)value,1);
             }else if (cmp_types(rightValue->type, "double")){
                 double * doubleValue = (double*)malloc(sizeof(double));
                 *doubleValue = -1 * (*((double*)rightValue->data));
-                res = newLiteral("double", (void*)doubleValue);
+                res = newLiteral("double", (void*)doubleValue,1);
             } else {
                 fprintf(stderr, "Invalid type for unary minus\n");
                 exit(1);
@@ -49,7 +46,7 @@ void* interpret_Unary(Expr* expr){
             if (cmp_types(rightValue->type, "int")){
                 int * value = (int*)malloc(sizeof(int));
                 *value =  !(*((int*)rightValue->data));
-                res = newLiteral("int", (void*)value);
+                res = newLiteral("int", (void*)value,1);
                 break;
             } else {
                 fprintf(stderr, "Invalid type for unary bang\n");
@@ -57,7 +54,7 @@ void* interpret_Unary(Expr* expr){
             }
             break;
     }
-    freeLiteral(rightValue);
+    freeLiteral(rightValue,0);
     return (void*)res;
 }
 
@@ -97,7 +94,7 @@ void* interpret_Binary(Expr* expr){
         int leftv = *((int*)leftValue->data);
         int rightv = *((int*)rightValue->data);
         oper_int(value, leftv, rightv, operatorT->type);
-        res = newLiteral("int", (void*)value);
+        res = newLiteral("int", (void*)value,1);
     }
     else{
         double* value = (double*)malloc(sizeof(double));
@@ -113,11 +110,51 @@ void* interpret_Binary(Expr* expr){
             rightv = *((double*)rightValue->data);
         }
         oper_double(value, leftv, rightv, operatorT->type);
-        res = newLiteral("double", (void*)value);
+        res = newLiteral("double", (void*)value,1);
     }
-    freeLiteral(leftValue);
-    freeLiteral(rightValue);
+    freeLiteral(leftValue,0);
+    freeLiteral(rightValue,0);
     return (void*) res;
+}
+
+void * interpret_Call(Expr* expr){
+    Literal * callee = evaluate(expr->expr.call.callee);
+    List_Expr * arguments = expr->expr.call.arguments;
+    List_Literal * args = newList_Literal();
+
+    Node_Expr * current = arguments->head;
+    while (current != NULL){
+        add_Literal(args, evaluate(current->data));
+        current = current->next;
+    }
+    Callable * function = literal_as_Callable(callee);
+    Literal * res = execute_callable(function, &interpreter, args);
+
+    // Node_Literal * current_literal = args->head;
+    // Node_Literal * next;
+    // while (current_literal != NULL){
+    //     next = current_literal->next;
+    //     printf("freeing inn pos %p\n", current_literal->data);
+    //     // freeLiteral(current_literal->data);
+    //     // free(current_literal);
+    //     current_literal = next;
+    // }
+    // free((char*)callee->type);
+    // free(callee);
+    freeLiteral(callee,0);
+
+    Node_Literal * current_literal = args->head;
+    Node_Literal * next;
+    while (current_literal != NULL){
+        next = current_literal->next;
+        free(current_literal);
+        current_literal = next;
+    }
+    free(args);
+    // freeCallable(function);
+    // freeList_Literal(args);
+    // freeCallable(function); //free the Callable?
+    return NULL;//(void*)res;
 }
 
 void * interpret_Print(Stmt* stmt){
@@ -132,7 +169,7 @@ void * interpret_Print(Stmt* stmt){
         fprintf(stderr, "Invalid type for print\n");
         exit(1);
     }
-    freeLiteral(value);
+    freeLiteral(value,0);
     return NULL;
 }
 
@@ -143,7 +180,7 @@ void *interpret_Variable(Expr* expr){
         fprintf(stderr, "Variable %s not found\n", (char*)tname->literal->data);
         exit(1);
     }
-    freeLiteral(tname->literal);
+    freeLiteral(tname->literal,1);
     return (void*)var_to_literal(var);
 }
 
@@ -152,7 +189,6 @@ void * interpret_VarDeclaration(Stmt* stmt){
     Token* type = stmt->stmt.var.type;
     Expr* initializer = stmt->stmt.var.initializer;
     Rtype* t = searchHT_Rtype(types, (char*)type->literal->data);
-    Literal* value;
 
     char * name = (char*)tname->literal->data;
 
@@ -164,22 +200,19 @@ void * interpret_VarDeclaration(Stmt* stmt){
         fprintf(stderr, "Variable %s already exists\n", name);
         exit(1);
     }
-    Rvariable *var;
-    if (initializer != NULL){
-        value = evaluate(initializer);
-        if (!cmp_types(t->name, value->type)){
-            fprintf(stderr, "Type mismatch\n");
-            exit(1);
-        }
-        var = newRvariable_from_Literal(tname, value);
-        free(value);
-    } else {
-        var = newRvariable(strdup(t->name), tname, malloc(t->size));
-    }
+    Rvariable *var = newRvariable(t->name, tname, malloc(t->size));
+
     addHT_var(interpreter.env->vars, var, 0);
-    freeLiteral(type->literal);
+    if (initializer != NULL){
+        Literal * value = evaluate(initializer);
+        update_var_from_Literal(var, value);
+        free(value->data);
+        free(value->type);
+        free(value);
+    }
+    freeLiteral(tname->literal,0);
+    freeLiteral(type->literal,1);
     // free(value);
-    // free(tname->literal);           //either here or in newRvariable_from_Token
     return NULL;
 }
 
@@ -189,22 +222,20 @@ void * interpret_VarAssign(Expr* expr){
     Rvariable* var = get_var(interpreter.env, tname);
 
     if (var == NULL){
-        Literal * tmp = newLiteral("string",(void*)strdup(value->type));
-        Token *type = newToken(TYPE, value->type, tmp, tname->line);
-        Token *tvalue = newToken(TOKEN_EOF, "\0", value , 0);
-        Expr * literal_expr = newLiteralExpr(tvalue);
+        Literal * tmp = newLiteral("string", strdup(value->type),1);
+        Token *type = newToken(TYPE, value->type, tmp, tname->line,1);
+        Expr * literal_expr = newLiteralExpr(value);
         Stmt* stmt = newVarStmt(type, tname, literal_expr);
         execute(stmt);
-        var = searchHT_var(interpreter.env->vars, tname);
 
-        freeToken(tvalue);
-        freeExpr(literal_expr);
+        free(literal_expr);
         free(stmt);
         freeToken(type);
+        // freeLiteral(tmp);
     } else {
         update_var_from_Literal(var, value);
-        freeLiteral(value);
-        freeLiteral(tname->literal);
+        freeLiteral(value,0);
+        freeLiteral(tname->literal,0);
     }
     return NULL;
 }
@@ -229,6 +260,27 @@ void *interpret_Block(Stmt* stmt){
     return NULL;
 }
 
+// void *interpret_FunDeclaration(Stmt* stmt){
+//     Token* name = stmt->stmt.function.name;
+//     List_Stmt* params = stmt->stmt.function.params;
+//     List_Stmt* body = stmt->stmt.function.body;
+
+//     Callable* function = newCallable(params, body);
+    
+//     Literal* value = newLiteral("function", (void*)function);
+//     Expr* initializer = newLiteralExpr(value);
+//     Literal* ltype = newLiteral("string", strdup("function"));
+//     Token* type = newToken(TYPE, "function", ltype, 0);
+//     Stmt* varStmt = newVarStmt(type, name, initializer);
+//     execute(varStmt);
+
+//     freeToken(type);
+//     freeStmt(varStmt);
+
+
+//     return NULL;
+// }
+
 void Interpret(List_Stmt *stmts){
     Node_Stmt *current = stmts->head;
     while (current != NULL){
@@ -248,6 +300,7 @@ void interpreter_init(){
     interpreter.expr_visitor->visitUnary     = interpret_Unary;
     interpreter.expr_visitor->visitVariable  = interpret_Variable;
     interpreter.expr_visitor->visitAssign    = interpret_VarAssign;
+    interpreter.expr_visitor->visitCall      = interpret_Call;
 
     interpreter.stmt_visitor->visitExpression = interpret_Expr;
     interpreter.stmt_visitor->visitPrint      = interpret_Print;

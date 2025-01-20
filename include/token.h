@@ -30,6 +30,7 @@ typedef enum {
 typedef struct {
     char *type;
     void * data;
+    int free_data;
 } Literal;
 
 typedef struct {
@@ -37,12 +38,15 @@ typedef struct {
     char* lexeme;
     Literal *literal;
     int line;
+    int is_copy;
 } Token;
 
-Token *newToken(TokenType type, char* lexeme, Literal *literal, int line);
+Token *newToken(TokenType type, char* lexeme, Literal *literal, int line, int is_copy);
 void freeToken(Token* token);
 char *TokenToString(Token* token);
 
-Literal *newLiteral(char *type, void *data);
-void freeLiteral(Literal *literal);
+Literal *newLiteral(char *type, void *data, int free_data);
+void freeLiteral(Literal *literal, int free_data);
+Literal *copyLiteral(Literal *literal);
+Token *copyToken(const Token *token);
 #endif //TOKEN_H

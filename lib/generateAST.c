@@ -229,8 +229,8 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
     char *argument_name=NULL, *argument_type=NULL;
 
 
-    fprintf(header, "void free%s(%s*);\n", baseName, baseName);
-    fprintf(source, "void free%s(%s* %s){\n", baseName, baseName, lower_baseName);
+    fprintf(header, "void free%s(%s*,int free_literal);\n", baseName, baseName);
+    fprintf(source, "void free%s(%s* %s,int free_literal){\n", baseName, baseName, lower_baseName);
     fprintf(source, "\tif (%s == NULL) return;\n", lower_baseName);
     fprintf(source, "\tswitch(%s->type){\n", lower_baseName);
     while(*types){
@@ -248,9 +248,22 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
             argument_name = getIndex_string(slist, 1);
             free(tmp);
             tmp = replace(argument_type, '*','\0');
-            if (strcmp(tmp, "Token") != 0)              // Is this rule general?
-                if (argument_type[strlen(argument_type)-1] == '*')
-                    fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+
+            if (strcmp(tmp, "List_Token") != 0)              // Is this rule general?
+                if (argument_type[strlen(argument_type)-1] == '*'){
+                    if (strcmp(tmp,"Literal")==0)
+                        fprintf(source,"\t\tif (free_literal) freeLiteral(%s -> %s.%s.%s,1);\n",lower_baseName, lower_baseName, lower_type, argument_name);
+                    else if (strcmp(tmp,"Expr")==0)
+                        fprintf(source,"\t\tfree%s (%s -> %s.%s.%s, free_literal);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+                    else if (strcmp(tmp,"Token")==0){
+                        fprintf(source,"\t\tif (free_literal) freeLiteral(%s -> %s.%s.%s->literal,1);\n",lower_baseName, lower_baseName, lower_type, argument_name);
+                        fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+                    }
+                    else if (strstr(tmp,"List_")!=NULL)
+                        fprintf(source,"\t\tfree%s (%s -> %s.%s.%s, free_literal);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+                    else
+                        fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+                }
             free(tmp);
             freeList_string(slist);
         }
@@ -263,7 +276,6 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
     }
     fprintf(source, "\t}\n");   // end switch
     fprintf(source, "\tfree(%s);\n}\n", lower_baseName);    //free the struct
-    fprintf(header, "#endif // %s_H\n", upper_baseName);
     free(lower_baseName);
     free(upper_baseName);
     fclose(header);
@@ -271,12 +283,79 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
     free(headerPath);
     free(sourcePath);
 }
+
+void define_copy(const char* headerDir, const char* sourceDir, const char* baseName, const char* types[]){
+    FILE * header, *source;
+    char *headerPath = (char*)malloc(strlen(headerDir) + strlen(baseName) + 5);
+    char *sourcePath = (char*)malloc(strlen(sourceDir) + strlen(baseName) + 5);
+    sprintf(headerPath, "%s/%s.h", headerDir, baseName);
+    sprintf(sourcePath, "%s/%s.c", sourceDir, baseName);
+    header = fopen(headerPath, "a");
+    source = fopen(sourcePath, "a");
+
+    char *type = NULL, *upper_type = NULL, *lower_type = NULL;
+    char *lower_baseName = lower(baseName); char *upper_baseName = upper(baseName);
+    List_string* slist = NULL;
+    char *tmp = NULL;
+    List_string* arguments = NULL;
+    char *argument_name=NULL, *argument_type=NULL;
+
+    fprintf(header, "%s* copy%s(%s*);\n", baseName, baseName, baseName);
+    fprintf(source, "%s* copy%s(%s* %s){\n", baseName, baseName, baseName, lower_baseName);
+    fprintf(source, "\tif (%s == NULL) return NULL;\n", lower_baseName);
+    fprintf(source, "\t%s* copy;\n", baseName);
+    fprintf(source, "\tswitch(%s->type){\n", lower_baseName);
+    while(*types){
+        slist = splitString(*types, ':');
+        type = trim(getIndex_string(slist, 0));
+        upper_type = upper(type);
+        lower_type = lower(type);
+        fprintf(source, "\tcase %s_%s:\n", upper_baseName, upper_type);
+        arguments = splitString(getIndex_string(slist,1), ',');
+        freeList_string(slist);
+        fprintf(source, "\t\tcopy = new%s%s(\n", type, baseName);
+        for (int i = 0; i < arguments->size; i++){
+            tmp = trim(getIndex_string(arguments, i));
+            slist = splitString(tmp, ' ');
+            argument_type = getIndex_string(slist, 0);
+            argument_name = getIndex_string(slist, 1);
+            free(tmp);
+            tmp = replace(argument_type, '*','\0');
+            if (i < arguments->size - 1) {
+                fprintf(source,"\t\t\tcopy%s (%s -> %s.%s.%s),\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+            } else {
+                fprintf(source,"\t\t\tcopy%s (%s -> %s.%s.%s)\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+            }            
+            free(tmp);
+            freeList_string(slist);
+        }
+        fprintf(source, "\t\t);\n");
+        fprintf(source, "\t\tbreak;\n");
+        freeList_string(arguments);
+        free(type);
+        free(upper_type);
+        free(lower_type);
+        types++;
+    }
+    fprintf(source, "\tdefault: fprintf(stderr, \"not valid type\");\n");
+    fprintf(source, "\t}\n");   // end switch
+    fprintf(source, "\treturn copy;\n}\n");
+    fprintf(header, "#endif // %s_H\n", upper_baseName);
+    free(lower_baseName);
+    free(upper_baseName);
+    fclose(header);
+    fclose(source);
+    free(headerPath);
+    free(sourcePath);
+
+}
 void defineAST(const char *includeDir,const char *srcDir, const char *baseName, 
     const char *types[], const char *includes[], const char *forwardDeclares[]){
     defineAST_header_only(includeDir, baseName, types, includes, forwardDeclares);
     define_Accept(includeDir, srcDir, baseName, types);
     define_constructors(includeDir, srcDir, baseName, types);
     define_destructor(includeDir, srcDir, baseName, types);
+    define_copy(includeDir, srcDir, baseName, types);
     // defineAST_source(srcDir, baseName, types);
 }
 int main(int argc, char **argv){
@@ -290,14 +369,18 @@ int main(int argc, char **argv){
     const char *ExprNames[] = {
         "Assign   : Token* name, Expr* value",
         "Binary   : Expr* left, Token* operatorT, Expr* right",
+        "Call     : Expr* callee, Token* paren, List_Expr* arguments",
         "Grouping : Expr* expression",
-        "Literal  : Token* value",
+        "Literal  : Literal* value",
         "Unary    : Token* operatorT, Expr* right",
         "Variable : Token* name",
         NULL
     };
     const char *ExprIncludes[] = {"token.h", NULL};
-    const char *ExprForwardDeclares[] = {NULL};
+    const char *ExprForwardDeclares[] = {"typedef struct List_Expr List_Expr;",
+                                        "void freeList_Expr(List_Expr *list, int);",
+                                        "List_Expr* copyList_Expr(List_Expr* expr);",
+                                        NULL};
 
     defineAST(includeDir, srcDir, "Expr", ExprNames, ExprIncludes, ExprForwardDeclares);
 
@@ -308,10 +391,11 @@ int main(int argc, char **argv){
         "Var        : Token* type, Token* name, Expr* initializer",
         NULL
     };
-    const char *StmtIncludes[] = {"Expr.h", NULL};
+    const char *StmtIncludes[] = {"Expr.h","LinkList_Token.h", NULL};
     const char *StmtForwardDeclares[] = {"typedef struct List_Stmt List_Stmt;",
-                                        "void freeList_Stmt(List_Stmt *list);"
-                                        ,NULL};
+                                        "void freeList_Stmt(List_Stmt *, int);",
+                                        "List_Stmt* copyList_Stmt(List_Stmt* stmt);",
+                                        NULL};
     defineAST(includeDir, srcDir, "Stmt", StmtNames, StmtIncludes, StmtForwardDeclares);
 
     return 0;

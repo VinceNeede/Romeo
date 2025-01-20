@@ -1,13 +1,13 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
+CFLAGS = -g -Wall -Wextra
 
-LLS_SUB = Token char string Rtype Stmt var
+LLS_SUB = Token char string Rtype Stmt var Expr Literal
 LLS_H := $(addprefix ../include/LinkList_, $(addsuffix .h, $(LLS_SUB)))
 LLS_C := $(addprefix ./LinkList_, $(addsuffix .c, $(LLS_SUB)))
 LLS = $(LLS_H) $(LLS_C)
 
 
-all: keyword.c libstringutils.a HT_Rtype.c ../bin/generateAST LinkList_Stmt.c  HT_var.c libLinkedLists.a
+all: keyword.c libstringutils.a ../bin/generateAST HT_Rtype.c LinkList_Literal.c LinkList_Expr.c LinkList_Stmt.c HT_var.c libLinkedLists.a
 
 ../bin/gLL: generate_LinkedList_files.c
 	$(CC) $(CFLAGS) -o $@ $^
@@ -31,7 +31,13 @@ LinkList_Rtype.c : ../bin/gLL
 	../bin/gLL -H ../include -S . -s Rtype -t Rtype\* -u -I Rtype.h
 
 LinkList_Stmt.c : ../bin/gLL
-	../bin/gLL -H ../include -S . -s Stmt -t Stmt\* -u -I Stmt.h
+	../bin/gLL -H ../include -S . -s Stmt -t Stmt\* -u -a -I Stmt.h
+
+LinkList_Expr.c : ../bin/gLL
+	../bin/gLL -H ../include -S . -s Expr -t Expr\* -u -a -I Expr.h
+
+LinkList_Literal.c : ../bin/gLL
+	../bin/gLL -H ../include -S . -s Literal -t Literal\* -u -a -I token.h
 
 HT_Rtype.c : ../bin/gHT LinkList_Rtype.c
 	../bin/gHT -H ../include -S . -s Rtype -t Rtype\* -kt char* -kf name -I Rtype.h
@@ -46,13 +52,13 @@ libstringutils.a : string_utilities.c ../include/string_utilities.h LinkList_str
 	ar rcs $@ string_utilities.o
 	rm -f string_utilities.o
 
-libLinkedLists.a : $(LLS_H)
+libLinkedLists.a : $(LLS_C)
 	$(CC) $(CFLAGS) -I../include -c $(LLS_C)
 	ar rcs $@ $(LLS_C:.c=.o)
 	rm -f $(LLS_C:.c=.o)
 
-../bin/generateAST: generateAST.c LinkList_char.c LinkList_string.c LinkList_Token.c Rtype.c LinkList_Rtype.c HT_Rtype.c types.c
-	$(CC) $(CFLAGS) -I../include -o $@ $^ ../src/token.c -L./ -lstringutils
+../bin/generateAST: generateAST.c LinkList_char.c LinkList_string.c
+	$(CC) $(CFLAGS) -I../include -o $@ $^ -L./ -lstringutils
 	../bin/generateAST ../include/ ../src/
 
 clean:
