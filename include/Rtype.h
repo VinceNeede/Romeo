@@ -19,6 +19,7 @@ typedef struct {
         struct{
             char* name;
             List_string* args_types;
+            int non_optional_args;
         }function;
     }field;
 } key_field;
