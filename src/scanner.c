@@ -124,7 +124,6 @@ void literal_number(Scanner* scanner){
         int* intValue = (int*)malloc(sizeof(int));
         *intValue = atoi(value);
         tmp = newLiteral(type, (void*)intValue,1);
-        printf("allocated literal number in %p\n", tmp);
         addToken_toScanner(scanner, NUMBER, tmp);
     } else {
         double* doubleValue = (double*)malloc(sizeof(double));

@@ -56,7 +56,7 @@ void freeLiteral(Literal *literal, int free_data){
         if (cmp_types(literal->type, "string")) free((char*)literal->data);
         else if (cmp_types(literal->type, "int")) free((int*)literal->data);
         else if (cmp_types(literal->type, "double")) free((double*)literal->data);
-        else if (cmp_types(literal->type, "function")) free((Callable*)literal->data);
+        else if (cmp_types(literal->type, "function")) freeCallable((Callable*)literal->data);
         else fprintf(stderr, "cannot free void*\n");
     }
     if (literal->type != NULL) free(literal->type);
@@ -87,8 +87,7 @@ Literal *copyLiteral(Literal *literal){
     } else if (cmp_types(literal->type, "double")){
         return newLiteral(literal->type, doubledup((double*)literal->data),1);
     } else if (cmp_types(literal->type, "function")){
-        fprintf(stderr, "Copying function literal\n");
-        return newLiteral(literal->type, newCallable_from_literal(literal),1);
+        return newLiteral(literal->type, copyCallable((Callable*) literal->data),1);
     }
     return NULL;
 }

@@ -127,7 +127,7 @@ void * interpret_Call(Expr* expr){
         add_Literal(args, evaluate(current->data));
         current = current->next;
     }
-    Callable * function = newCallable_from_literal(callee);
+    Callable * function = literal_as_Callable(callee);
     Literal * res = execute_callable(function, &interpreter, args);
 
     // Node_Literal * current_literal = args->head;
@@ -204,10 +204,13 @@ void * interpret_VarDeclaration(Stmt* stmt){
 
     addHT_var(interpreter.env->vars, var, 0);
     if (initializer != NULL){
-        Expr * ass=newAssignExpr(tname, initializer);
-        evaluate(ass);
-        free(ass);
-    } else freeLiteral(tname->literal,0);
+        Literal * value = evaluate(initializer);
+        update_var_from_Literal(var, value);
+        free(value->data);
+        free(value->type);
+        free(value);
+    }
+    freeLiteral(tname->literal,0);
     freeLiteral(type->literal,1);
     // free(value);
     return NULL;

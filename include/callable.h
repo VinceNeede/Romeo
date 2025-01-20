@@ -11,7 +11,8 @@ typedef struct Callable{
 } Callable;
 
 Callable *newCallable(List_Stmt*, List_Stmt *);
-Callable *newCallable_from_literal(Literal*);
+Callable *copyCallable(Callable* calle);
+Callable *literal_as_Callable(Literal* lit);
 void freeCallable(Callable *callable);
 Literal * execute_callable(Callable *, Interpreter *, List_Literal*);
 #endif //CALLABLE_H

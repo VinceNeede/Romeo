@@ -7,10 +7,14 @@ Callable *newCallable(List_Stmt* params, List_Stmt* body){
     callable->body = body;
     return callable;
 }
-Callable *newCallable_from_literal(Literal* lit){
-    if (cmp_types(lit->type, "function")) 
+Callable *copyCallable(Callable* calle){
+    return newCallable(copyList_Stmt(calle->params), copyList_Stmt(calle->body));
+}
+Callable *literal_as_Callable(Literal* lit){
+    if (cmp_types(lit->type, "function")){
         return (Callable*)lit->data;
-    else return NULL;
+    }
+    return NULL;
 }
 
 // void freeList_Stmt_Callable(List_Stmt *list){
@@ -43,7 +47,6 @@ Literal * execute_callable(Callable *callable, Interpreter *interpreter, List_Li
     Node_Stmt *current_default_param = copy_params->head;
     Node_Literal *current_args = args->head;
 
-
     while(current_default_param!= NULL){
         if (current_default_param->data->type != STMT_VAR){         //This should be tested in Callable definition
             fprintf(stderr, "Expect variable declaration in function parameters\n");
@@ -56,11 +59,11 @@ Literal * execute_callable(Callable *callable, Interpreter *interpreter, List_Li
             new_stmt = newVarStmt(copyToken(current_stmt->stmt.var.type), copyToken(current_stmt->stmt.var.name), newLiteralExpr(current_args->data));
             add_Stmt(new_params, new_stmt);
         } else {
-            if (current_default_param->data->stmt.var.initializer == NULL){
+            if (current_stmt->stmt.var.initializer == NULL){
                 fprintf(stderr, "Expect argument for function parameter %s\n", current_stmt->stmt.var.name->lexeme);
                 exit(1);
             }
-            add_Stmt(new_params, current_default_param->data);
+            add_Stmt(new_params, copyStmt(current_stmt));
         }
 
         current_default_param = current_default_param->next;
