@@ -89,7 +89,7 @@ void literal_string(Scanner* scanner){
     }
 
     scanner->current++;
-    char* value = (char*)malloc(scanner->current - scanner->start - 2);
+    char* value = (char*)malloc(scanner->current - scanner->start - 1);
     //trim surrounding quotes
     strncpy(value, scanner->source + scanner->start + 1, scanner->current - scanner->start - 2);
     value[scanner->current - scanner->start - 2] = '\0';
