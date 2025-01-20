@@ -181,6 +181,11 @@ Stmt *varDeclaration(Parser* parser){
         parser->current = parser->current->next;
         initializer = expression(parser);
     }
+    key_field *key = (key_field*)malloc(sizeof(key_field));
+    key->type = NAME;
+    key->field.name = strdup((char*)name->literal->data);
+    freeLiteral(name->literal,1);
+    name->literal = newLiteral("key_field", (void*)key,1);
     res = newVarStmt(type, name, initializer);
     return res;
 }
@@ -204,7 +209,8 @@ List_Stmt* block(Parser* parser){
 Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
     List_Stmt *params = newList_Stmt();
     List_Stmt *body;
-
+    Stmt* stmt;
+    List_string *args_types = newList_string();
     if (!match_type(parser, LEFT_PAREN)){
         fprintf(stderr, "Expect '(' after function name\n");
         exit(1);
@@ -217,7 +223,13 @@ Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
             fprintf(stderr, "Cannot have more than 255 parameters\n");
             exit(1);
         }
-        add_Stmt(params, statement(parser));
+        stmt = statement(parser);
+        if (stmt->type != STMT_VAR){
+            fprintf(stderr, "Expect parameter declaration\n");
+            exit(1);
+        }
+        add_string(args_types, strdup((char*)stmt->stmt.var.type->literal->data));
+        add_Stmt(params, stmt);
         if (match_type(parser, COMMA)) parser->current = parser->current->next;
     } while (!match_type(parser, RIGHT_PAREN));
 
@@ -232,7 +244,12 @@ Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
         exit(1);
     }
     body = block(parser);
-
+    key_field *key = (key_field*)malloc(sizeof(key_field));
+    key->type = FUNCTION;
+    key->field.function.name = strdup((char*)name->literal->data);
+    key->field.function.args_types = args_types;
+    freeLiteral(name->literal,1);
+    name->literal = newLiteral("key_field", (void*)key,1);
     Literal *value = newLiteral("function", (void*)newCallable(params, body),1);
     return newVarStmt(type, name, newLiteralExpr(value));
 }
