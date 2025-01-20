@@ -1,5 +1,6 @@
 #include"token.h"
 #include "callable.h"
+#include "LinkList_string.h"
 
 Token * newToken(TokenType type, char* lexeme, Literal *literal, int line, int is_copy){
     Token * token = (Token*)malloc(sizeof(Token));
