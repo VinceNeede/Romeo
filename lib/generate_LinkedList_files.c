@@ -117,12 +117,21 @@ int main(int argc, char *argv[]) {
             "\n"
             "Node_%s* newNode_%s(%s data);\n",subfix, type, subfix, subfix,
             subfix, subfix, type);
+
+    char tmp[100];
+    if (add_free){
+        sprintf(tmp,"\tNode_%s* free_lit_from;\n", subfix);
+    }
+    else{
+        tmp[0]='\0';
+    }
     fprintf(header,
             "\n"
             "typedef struct List_%s {\n"
-            "    Node_%s *head;\n"
-            "    Node_%s *tail;\n"
-            "    int size;\n"
+            "\tNode_%s *head;\n"
+            "\tNode_%s *tail;\n"
+            "\tint size;\n"
+            "%s"
             "} List_%s;\n"
             "\n"
             "List_%s* newList_%s();\n"
@@ -130,8 +139,8 @@ int main(int argc, char *argv[]) {
             "%s getIndex_%s(List_%s *list, int index);\n"
             "List_%s* copyList_%s(List_%s *list);\n"
             "#endif // LINKLIST_%s_H\n",
-            subfix, subfix,
-            subfix, subfix,
+            subfix, subfix, subfix, 
+            tmp, subfix,
             subfix, subfix, subfix, subfix, type, type,
             subfix, subfix, 
             subfix, subfix, subfix,
@@ -140,7 +149,7 @@ int main(int argc, char *argv[]) {
     if (add_free)
         fprintf(header,
             "void freeNode_%s(Node_%s *node, int control);\n"
-            "void freeList_%s(List_%s *list, int control);\n", subfix, subfix, subfix, subfix);
+            "void freeList_%s(List_%s *list);\n", subfix, subfix, subfix, subfix);
     else
         fprintf(header,
             "void freeNode_%s(Node_%s *node);\n"
@@ -166,11 +175,11 @@ int main(int argc, char *argv[]) {
             subfix, subfix, type,
             subfix, subfix, subfix);
     if (add_free)
-        fprintf(src,             "void freeNode_%s(Node_%s *node, int control) {\n",subfix, subfix);
+        fprintf(src,"void freeNode_%s(Node_%s *node, int control) {\n",subfix, subfix);
     else
-        fprintf(src,             "void freeNode_%s(Node_%s *node) {\n",subfix, subfix);
+        fprintf(src,"void freeNode_%s(Node_%s *node) {\n",subfix, subfix);
 
-    char tmp[100];
+
     if (add_free){
         sprintf(tmp, ", control");
     }
@@ -187,6 +196,10 @@ int main(int argc, char *argv[]) {
 
     // if (is_struct) fprintf(src,"    free%s(node->data);\n", subfix);
 
+    if (add_free)
+        sprintf(tmp, "\t\tlist->free_lit_from = list->head;\n");
+    else
+        tmp[0]='\0';
 
     fprintf(src,"    free(node);\n"
             "}\n"
@@ -208,6 +221,7 @@ int main(int argc, char *argv[]) {
             "    if (list->tail == NULL) {\n"
             "        list->head = node;\n"
             "        list->tail = list->head;\n"
+            "%s"
             "    } else {\n"
             "        list->tail->next = node;\n"
             "        list->tail = list->tail->next;\n"
@@ -230,12 +244,13 @@ int main(int argc, char *argv[]) {
             subfix, subfix,
             subfix, subfix, subfix,
             subfix, subfix, type,
-            subfix, subfix, 
+            subfix, subfix, tmp,
             type, subfix, subfix, 
             subfix);
 
     if (add_free){
-        fprintf(src,"void freeList_%s(List_%s *list, int control) {\n", subfix, subfix);
+        fprintf(src,"void freeList_%s(List_%s *list) {\n", subfix, subfix);
+        fprintf(src, "int control = 0;\n");
         sprintf(tmp, ", control");
     }else{
         fprintf(src,"void freeList_%s(List_%s *list) {\n", subfix, subfix);
@@ -243,7 +258,10 @@ int main(int argc, char *argv[]) {
     }
     fprintf(src,
             "    Node_%s *current = list->head;\n"
-            "    while (current != NULL) {\n"
+            "    while (current != NULL) {\n", subfix);
+    if (add_free)
+        fprintf(src,"        if (current == list->free_lit_from) control = 1;\n");
+    fprintf(src,
             "        Node_%s *next = current->next;\n"
             "        freeNode_%s(current%s);\n"
             "        current = next;\n"
@@ -251,7 +269,7 @@ int main(int argc, char *argv[]) {
             "    free(list);\n"
             "}\n",
             subfix, 
-            subfix, subfix, tmp);
+            subfix, tmp);
 
     // implement copyList_<subfix>
     fprintf(src,
