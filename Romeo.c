@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "interpreter.h"
 #include "types.h"
+#include "base.h"
 
 char* readFile(const char *path) {
     FILE *file = fopen(path, "r");
@@ -79,6 +80,7 @@ int main(int argc, char *argv[]){
     parser = newParser(scanner->tokens);
     types_init();
     interpreter_init();
+    base_functions(interpreter.env->vars);
 
     if(argc==2) runFile(argv[1], scanner, parser);
     else runPrompt(scanner, parser);
