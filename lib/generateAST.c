@@ -259,8 +259,8 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
                         fprintf(source,"\t\tif (free_literal) freeLiteral(%s -> %s.%s.%s->literal,1);\n",lower_baseName, lower_baseName, lower_type, argument_name);
                         fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
                     }
-                    else if (strstr(tmp,"List_")!=NULL)
-                        fprintf(source,"\t\tfree%s (%s -> %s.%s.%s, free_literal);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+                    // else if (strstr(tmp,"List_")!=NULL)
+                    //     fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
                     else
                         fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
                 }
@@ -374,11 +374,13 @@ int main(int argc, char **argv){
         "Literal  : Literal* value",
         "Unary    : Token* operatorT, Expr* right",
         "Variable : Token* name",
+        "Ret      : Expr* value",
         NULL
     };
     const char *ExprIncludes[] = {"token.h", NULL};
     const char *ExprForwardDeclares[] = {"typedef struct List_Expr List_Expr;",
-                                        "void freeList_Expr(List_Expr *list, int);",
+                                        "typedef struct node_Expr Node_Expr;",
+                                        "void freeList_Expr(List_Expr *list);",
                                         "List_Expr* copyList_Expr(List_Expr* expr);",
                                         NULL};
 
@@ -392,8 +394,10 @@ int main(int argc, char **argv){
         NULL
     };
     const char *StmtIncludes[] = {"Expr.h","LinkList_Token.h", NULL};
-    const char *StmtForwardDeclares[] = {"typedef struct List_Stmt List_Stmt;",
-                                        "void freeList_Stmt(List_Stmt *, int);",
+    const char *StmtForwardDeclares[] = {
+                                        "typedef struct List_Stmt List_Stmt;",
+                                        "typedef struct node_Stmt Node_Stmt;",
+                                        "void freeList_Stmt(List_Stmt *);",
                                         "List_Stmt* copyList_Stmt(List_Stmt* stmt);",
                                         NULL};
     defineAST(includeDir, srcDir, "Stmt", StmtNames, StmtIncludes, StmtForwardDeclares);
