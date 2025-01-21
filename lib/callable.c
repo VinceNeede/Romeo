@@ -1,14 +1,15 @@
 #include "callable.h"
 #include "environment.h"
 
-Callable *newCallable(List_Stmt* params, List_Stmt* body){
+Callable *newCallable(List_Stmt* params, List_Stmt* body, char* ret_type){
     Callable *callable = (Callable*)malloc(sizeof(Callable));
     callable->params = params;
     callable->body = body;
+    callable->return_type = strdup(ret_type);
     return callable;
 }
 Callable *copyCallable(Callable* calle){
-    return newCallable(copyList_Stmt(calle->params), copyList_Stmt(calle->body));
+    return newCallable(copyList_Stmt(calle->params), copyList_Stmt(calle->body), calle->return_type);
 }
 Callable *literal_as_Callable(Literal* lit){
     if (cmp_types(lit->type, "function")){
@@ -31,8 +32,9 @@ Callable *literal_as_Callable(Literal* lit){
 
 void freeCallable(Callable *callable){
     if (callable == NULL) return;
-    freeList_Stmt(callable->params,1);
-    freeList_Stmt(callable->body,1);
+    freeList_Stmt(callable->params);
+    freeList_Stmt(callable->body);
+    free(callable->return_type);
     free(callable);
 }
 
@@ -70,12 +72,24 @@ Literal * execute_callable(Callable *callable, Interpreter *interpreter, List_Li
         if (current_args!=NULL) current_args = current_args->next;
     }
     Interpret(new_params);
-    Interpret(copy_body);
-    freeList_Stmt(new_params,0);
-    freeList_Stmt(copy_params,1);
-    freeList_Stmt(copy_body,0);
+    Literal *ret_val = NULL;
+    interpreter->ret_value = &ret_val;
+    Node_Stmt* interpreter_ret = Interpret(copy_body);
+    if (ret_val!= NULL && !cmp_types(callable->return_type, ret_val->type)){
+        fprintf(stderr, "Expected return type %s but got %s\n", callable->return_type, ret_val->type);
+        exit(1);
+    } else if (ret_val == NULL && strcmp(callable->return_type, "void") != 0){
+        fprintf(stderr, "Expected return type %s but got void\n", callable->return_type);
+        exit(1);
+    }
+    new_params->free_lit_from = NULL;
+    freeList_Stmt(new_params);
+    freeList_Stmt(copy_params);
+    copy_body->free_lit_from = interpreter_ret;
+    freeList_Stmt(copy_body);
     freeEnvironment(interpreter->env);
     interpreter->env = prev_env;
+    interpreter->check_return = 0;
     // freeList_Stmt(new_params,1);
-    return NULL;
+    return ret_val;
 }
