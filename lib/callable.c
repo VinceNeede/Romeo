@@ -6,6 +6,7 @@ Callable *newCallable(List_Stmt* params, List_Stmt* body, char* ret_type){
     callable->params = params;
     callable->body = body;
     callable->return_type = strdup(ret_type);
+    callable->function = NULL;
     return callable;
 }
 Callable *copyCallable(Callable* calle){
@@ -32,13 +33,24 @@ Callable *literal_as_Callable(Literal* lit){
 
 void freeCallable(Callable *callable){
     if (callable == NULL) return;
-    freeList_Stmt(callable->params);
-    freeList_Stmt(callable->body);
+    if (callable->params != NULL) freeList_Stmt(callable->params);
+    if (callable->body != NULL) freeList_Stmt(callable->body);
     free(callable->return_type);
     free(callable);
 }
 
 Literal * execute_callable(Callable *callable, Interpreter *interpreter, List_Literal* args){
+    if (callable->function!=NULL){
+        Literal *res = callable->function(args);
+        Node_Literal *current = args->head;
+        Node_Literal *next;
+        while (current != NULL){
+            next = current->next;
+            freeLiteral(current->data,1);
+            current = next;
+        }
+        return res;
+    }
     Environment *prev_env = interpreter->env;
     interpreter->env = newEnvironment(interpreter->env);
 
