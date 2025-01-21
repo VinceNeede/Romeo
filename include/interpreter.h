@@ -16,6 +16,8 @@ typedef struct {
     int check_return;
 } Interpreter;
 
+extern Interpreter interpreter;
+
 Node_Stmt* Interpret(List_Stmt *);
 void interpreter_init();
 void freeInterpreter();
