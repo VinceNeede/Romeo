@@ -1,12 +1,12 @@
-function add(int x, int y) -> int {
+function foo(int x, int y) -> int {
     print "adding ints"
     return x + y
 }
-function add(double x, double y) -> double{
+function foo(double x, double y) -> double{
     print "adding doubles"
     return x + y
 }
 
-print add(1,2)
-print add(1.0,2.0)
+print foo(1,2)
+print foo(1.0,2.0)
 
