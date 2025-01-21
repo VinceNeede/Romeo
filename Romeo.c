@@ -41,7 +41,8 @@ void run (char* source, Scanner *scanner, Parser *parser){
     scanTokens(scanner);
     stmts = parse(parser);
     Interpret(stmts);
-    freeList_Stmt(stmts, 0);
+    stmts->free_lit_from = NULL;
+    freeList_Stmt(stmts);
 }
 
 void runFile(char *path, Scanner *scanner, Parser *parser){

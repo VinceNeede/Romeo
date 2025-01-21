@@ -9,9 +9,8 @@ Literal *evaluate(Expr* expr){
     return (Literal *)ExprAccept(interpreter.expr_visitor, expr);
 }
 
-void execute(Stmt* stmt){
-    StmtAccept(interpreter.stmt_visitor, stmt);
-    return;
+void *execute(Stmt* stmt){
+    return StmtAccept(interpreter.stmt_visitor, stmt);
 }
 
 void* interpret_Literal(Expr* expr){
@@ -156,7 +155,7 @@ void * interpret_Call(Expr* expr){
         current_literal = next;
     }
     free(args);
-    return NULL;//(void*)res;
+    return res;//(void*)res;
 }
 
 void * interpret_Print(Stmt* stmt){
@@ -267,25 +266,36 @@ void * interpret_VarAssign(Expr* expr){
 }
 
 void * interpret_Expr(Stmt* stmt){
-    evaluate(stmt->stmt.expression.expression);
-    return NULL;
+    return evaluate(stmt->stmt.expression.expression);
 }
 
 void *interpret_Block(Stmt* stmt){
     Environment* prev = interpreter.env;
     List_Stmt *stmts = stmt->stmt.block.statements;
-    Node_Stmt *current = stmts->head;
-
+    Node_Stmt* stop_value = NULL;
     interpreter.env = newEnvironment(interpreter.env);
-    while (current != NULL){
-        execute(current->data);
-        current = current->next;
-    }
+    stop_value = Interpret(stmts);
+    stmts->free_lit_from = stop_value;
     freeEnvironment(interpreter.env);
     interpreter.env = prev;
     return NULL;
 }
 
+
+void *interpret_Ret(Expr* expr){
+    Literal* value = evaluate(expr->expr.ret.value);
+    if (strcmp(value->type, "string") == 0 && strcmp(value->data,"nil") == 0){
+        freeLiteral(value,0);
+    }
+    else if (interpreter.ret_value == NULL){
+        fprintf(stderr, "obtained a not nil return value but no place to assign it\n");
+        exit(1);
+    } else {
+        *interpreter.ret_value = value;
+    }
+    interpreter.check_return = 1;
+    return NULL;
+}
 // void *interpret_FunDeclaration(Stmt* stmt){
 //     Token* name = stmt->stmt.function.name;
 //     List_Stmt* params = stmt->stmt.function.params;
@@ -307,13 +317,21 @@ void *interpret_Block(Stmt* stmt){
 //     return NULL;
 // }
 
-void Interpret(List_Stmt *stmts){
+Node_Stmt* Interpret(List_Stmt *stmts){
     Node_Stmt *current = stmts->head;
-    while (current != NULL){
+    while (current != NULL && !interpreter.check_return){
         execute(current->data);
         current = current->next;
     }
-    return;
+    if (interpreter.check_return){
+        // if (interpreter.ret_value == NULL){
+        //     fprintf(stderr, "obtained a return value but no place to assign it\n");
+        //     exit(1);
+        // }
+        // *interpreter.ret_value = (Literal*)tmp_ret;
+        return current;
+    }
+    return NULL;
 }
 
 void interpreter_init(){
@@ -327,6 +345,8 @@ void interpreter_init(){
     interpreter.expr_visitor->visitVariable  = interpret_Variable;
     interpreter.expr_visitor->visitAssign    = interpret_VarAssign;
     interpreter.expr_visitor->visitCall      = interpret_Call;
+    interpreter.expr_visitor->visitRet       = interpret_Ret;
+
 
     interpreter.stmt_visitor->visitExpression = interpret_Expr;
     interpreter.stmt_visitor->visitPrint      = interpret_Print;
@@ -334,6 +354,8 @@ void interpreter_init(){
     interpreter.stmt_visitor->visitBlock      = interpret_Block;
 
     interpreter.env = newEnvironment(NULL);
+    interpreter.ret_value = NULL;
+    interpreter.check_return = 0;
     return;
 }
 

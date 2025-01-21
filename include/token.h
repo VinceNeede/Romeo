@@ -15,7 +15,7 @@ typedef enum {
     BANG, BANG_EQUAL,
     EQUAL, EQUAL_EQUAL,
     GREATER, GREATER_EQUAL,
-    LESS, LESS_EQUAL,
+    LESS, LESS_EQUAL, ARROW,
 
     // Literals.
     IDENTIFIER, STRING, NUMBER, TYPE,

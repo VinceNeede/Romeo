@@ -27,7 +27,7 @@ Expr *expression(Parser*); // forward declaration for Primary
 Expr* primary(Parser* parser){
     Token *token = parser->current->data;
     TokenType type = token->type;
-    Expr *res;
+    Expr *res=NULL;
 
     switch (type){
     case FALSE:
@@ -83,6 +83,7 @@ Expr* finishCall(Parser* parser, Expr* callee){
     }
     Token *paren = parser->current->data;
     parser->current = parser->current->next;
+    arguments->free_lit_from = NULL;
     return newCallExpr(callee, paren, arguments);
 }
 
@@ -211,6 +212,7 @@ Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
     List_Stmt *body;
     Stmt* stmt;
     List_string *args_types = newList_string();
+    char* return_type;
     int optional_args = 0;
 
     if (!match_type(parser, LEFT_PAREN)){
@@ -245,8 +247,18 @@ Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
         fprintf(stderr, "Expect ')' after parameters\n");
         exit(1);
     }
-
     parser->current = parser->current->next;
+    if (match_type(parser, ARROW)){
+        parser->current = parser->current->next;
+        if (!match_type(parser,TYPE)){
+            fprintf(stderr, "Expect return type after arrow\n");
+            exit(1);
+        }
+        return_type = strdup((char*)parser->current->data->literal->data);
+        freeLiteral(parser->current->data->literal,1);
+        parser->current = parser->current->next;
+    } else return_type = strdup("void");
+    
     if (!match_type(parser, LEFT_BRACE)){
         fprintf(stderr, "Expect '{' before function body\n");
         exit(1);
@@ -259,7 +271,8 @@ Stmt *funDeclaration(Parser* parser, Token* type, Token* name){
     key->field.function.non_optional_args = params->size - optional_args;
     freeLiteral(name->literal,1);
     name->literal = newLiteral("key_field", (void*)key,1);
-    Literal *value = newLiteral("function", (void*)newCallable(params, body),1);
+    Literal *value = newLiteral("function", (void*)newCallable(params, body, return_type),1);
+    free(return_type);
     return newVarStmt(type, name, newLiteralExpr(value));
 }
 
@@ -272,6 +285,15 @@ Stmt *statement(Parser* parser){
         return varDeclaration(parser);
     }
     if (match_type(parser,LEFT_BRACE)) return newBlockStmt(block(parser));
+    if (match_type(parser,RETURN)){
+        parser->current = parser->current->next;
+        Expr *expr = expression(parser);
+        if (expr == NULL){
+            fprintf(stderr, "Expect expression after return\n");
+            exit(1);
+        }
+        return newExpressionStmt(newRetExpr(expr));
+    }
     return newExpressionStmt(expression(parser));
 }
 
