@@ -100,6 +100,7 @@ Literal *copyLiteral(Literal *literal){
             case FUNCTION:
                 copy->field.function.name = strdup(((key_field*)literal->data)->field.function.name);
                 copy->field.function.args_types = copyList_string(((key_field*)literal->data)->field.function.args_types);
+                copy->field.function.non_optional_args = ((key_field*)literal->data)->field.function.non_optional_args;
                 break;
         }
         return newLiteral(literal->type, copy ,1);
