@@ -12,9 +12,11 @@ typedef struct {
     ExprVisitor* expr_visitor;
     StmtVisitor* stmt_visitor;
     Environment* env;
+    Literal **ret_value;
+    int check_return;
 } Interpreter;
 
-void Interpret(List_Stmt *);
+Node_Stmt* Interpret(List_Stmt *);
 void interpreter_init();
 void freeInterpreter();
 #endif // INTERPRETER_H
