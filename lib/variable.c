@@ -21,6 +21,8 @@ void freeRvariable(Rvariable *var){
     else if (cmp_types(var->type, "int")) free((int*)var->pos);
     else if (cmp_types(var->type, "double")) free((double*)var->pos);
     else if (cmp_types(var->type, "function")) freeCallable((Callable*)var->pos);
+    else if (cmp_types(var->type, "bool")) free((int*)var->pos);
+    else fprintf(stderr, "cannot free void*\n");
 
     if (var->type != NULL) free(var->type);
 
@@ -46,7 +48,7 @@ char *get_string_var(Rvariable* var){
 Literal *var_to_literal(Rvariable* var){
     void *pos;
     int free_data = 1;
-    if (cmp_types(var->type, "int")){
+    if (cmp_types(var->type, "int") || cmp_types(var->type, "bool")){
         pos = malloc(sizeof(int));
         *(int*)pos = *(int*)var->pos;
     } else if (cmp_types(var->type, "double")){

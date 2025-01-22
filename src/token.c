@@ -59,6 +59,7 @@ void freeLiteral(Literal *literal, int free_data){
         else if (cmp_types(literal->type, "double")) free((double*)literal->data);
         else if (cmp_types(literal->type, "function")) freeCallable((Callable*)literal->data);
         else if (cmp_types(literal->type, "key_field")) free_key_field((key_field*)literal->data);
+        else if (cmp_types(literal->type, "bool")) free((int*)literal->data);
         else fprintf(stderr, "cannot free void*\n");
     }
     if (literal->type != NULL) free(literal->type);
