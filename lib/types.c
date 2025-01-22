@@ -30,12 +30,12 @@ void types_init(){
     Rtype *rbool = newRtype(NAME,"bool",1,0);
     Rtype *rfunction = newRtype(FUNCTION,"function",sizeof(Callable),1);
     
-    addHT_Rtype(types, newRtype(NAME,"void",0,0), 0);
-    addHT_Rtype(types, rint, 0);
-    addHT_Rtype(types, rdouble, 0);
-    addHT_Rtype(types, rstring, 0);
-    addHT_Rtype(types, rbool, 0);
-    addHT_Rtype(types, rfunction, 0);
+    addHT_Rtype(&types, newRtype(NAME,"void",0,0), 0);
+    addHT_Rtype(&types, rint, 0);
+    addHT_Rtype(&types, rdouble, 0);
+    addHT_Rtype(&types, rstring, 0);
+    addHT_Rtype(&types, rbool, 0);
+    addHT_Rtype(&types, rfunction, 0);
 } 
 
 void free_types(){

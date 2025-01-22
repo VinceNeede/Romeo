@@ -68,7 +68,8 @@ void update_var_from_Literal(Rvariable* old, const Literal* new){
 Environment * newEnvironment(Environment* enclosing){
     Environment* env = (Environment*)malloc(sizeof(Environment));
     int size = enclosing == NULL ? GLOBAL_ENV_SIZE : LOCAL_ENV_SIZE;
-    env->vars = newHT_var(size, hash_var, cmp_var, NULL, freeRvariable);
+    env->vars  = (HT_var**)malloc(sizeof(HT_var*));
+    *env->vars = newHT_var(size, hash_var, cmp_var, NULL, freeRvariable);
     env->enclosing = enclosing;
     return env;
 }
@@ -85,7 +86,7 @@ Rvariable* get_var(Environment* env, Token* Tkey, int recurse){
         freeLiteral(Tkey->literal,1);
         Tkey->literal = newLiteral("key_field", (void*)key,1);
     }
-    var = searchHT_var(env->vars, key);
+    var = searchHT_var(*env->vars, key);
     if (var != NULL){
         if (var->key->type != key->type){
             fprintf(stderr, "Error: key type mismatch\n");
@@ -98,6 +99,7 @@ Rvariable* get_var(Environment* env, Token* Tkey, int recurse){
 }
 
 void freeEnvironment(Environment* env){
-    freeHT_var(env->vars);
+    freeHT_var(*env->vars);
+    free(env->vars);
     free(env);
 }

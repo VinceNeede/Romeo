@@ -76,7 +76,7 @@ binary_op2(div, int, double, double, /)
     Rfunction->function = fun_name##_##type2##_##type1; \
     addHT_var(vars, newRvariable("function", key, Rfunction),0);
 
-void base_functions(HT_var *vars){
+void base_functions(HT_var **vars){
     List_string *args_types;
     key_field *key;
     Callable *Rfunction;

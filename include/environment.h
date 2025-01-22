@@ -4,12 +4,12 @@
 #include "types.h"
 #include "token.h"
 
-#define GLOBAL_ENV_SIZE 100
-#define LOCAL_ENV_SIZE 20
+#define GLOBAL_ENV_SIZE 101
+#define LOCAL_ENV_SIZE 23
 
 
 typedef struct env{
-    HT_var* vars;
+    HT_var** vars;
     struct env* enclosing;
 } Environment;
 
