@@ -58,65 +58,6 @@ void* interpret_Unary(Expr* expr){
     return (void*)res;
 }
 
-#define EVAL(type) \
-void oper_##type(type* out, type left, type right, TokenType operatorT){\
-    switch (operatorT){\
-        case PLUS:\
-            *out = left + right;\
-            break;\
-        case MINUS:\
-            *out = left - right;\
-            break;\
-        case STAR:\
-            *out = left * right;\
-            break;\
-        case SLASH:\
-            *out = left / right;\
-            break;\
-        default:\
-            fprintf(stderr, "Invalid operator for " #type "\n");\
-            exit(1);\
-    }\
-}
-
-EVAL(int)
-EVAL(double)
-
-void* interpret_Binary(Expr* expr){
-    Token* operatorT = expr->expr.binary.operatorT;
-    Expr* left = expr->expr.binary.left;
-    Expr* right = expr->expr.binary.right;
-    Literal* leftValue = evaluate(left);
-    Literal* rightValue = evaluate(right);
-    Literal *res;
-    if (cmp_types(leftValue->type, "int") && cmp_types(rightValue->type, "int")){
-        int* value = (int*)malloc(sizeof(int));
-        int leftv = *((int*)leftValue->data);
-        int rightv = *((int*)rightValue->data);
-        oper_int(value, leftv, rightv, operatorT->type);
-        res = newLiteral("int", (void*)value,1);
-    }
-    else{
-        double* value = (double*)malloc(sizeof(double));
-        double leftv, rightv;
-        if (cmp_types(leftValue->type, "int")){
-            leftv = (double)*((int*)leftValue->data);
-        } else {
-            leftv = *((double*)leftValue->data);
-        }
-        if (cmp_types(rightValue->type, "int")){
-            rightv = (double)*((int*)rightValue->data);
-        } else {
-            rightv = *((double*)rightValue->data);
-        }
-        oper_double(value, leftv, rightv, operatorT->type);
-        res = newLiteral("double", (void*)value,1);
-    }
-    freeLiteral(leftValue,0);
-    freeLiteral(rightValue,0);
-    return (void*) res;
-}
-
 void * interpret_Call(Expr* expr){
     Literal * callee; 
     List_Expr * arguments = expr->expr.call.arguments;
@@ -133,13 +74,17 @@ void * interpret_Call(Expr* expr){
         current = current->next;
     }
     
-    key_field *key = (key_field*)malloc(sizeof(key_field));
-    key->type = FUNCTION;
-    key->field.function.name = strdup(expr->expr.call.callee->expr.variable.name->lexeme);
-    key->field.function.args_types = args_types;
-    key->field.function.non_optional_args = args->size;
-    freeLiteral(expr->expr.call.callee->expr.variable.name->literal,1);
-    expr->expr.call.callee->expr.variable.name->literal = newLiteral("key_field", (void*)key,1);
+    if (expr->expr.call.callee->type == EXPR_VARIABLE){
+        key_field *key = (key_field*)malloc(sizeof(key_field));
+        key->type = FUNCTION;
+        key->field.function.name = strdup(expr->expr.call.callee->expr.variable.name->lexeme);
+        key->field.function.args_types = args_types;
+        key->field.function.non_optional_args = args->size;
+        freeLiteral(expr->expr.call.callee->expr.variable.name->literal,1);
+        expr->expr.call.callee->expr.variable.name->literal = newLiteral("key_field", (void*)key,1);
+    } else {
+        fprintf(stderr, "Invalid callee for call\n");
+    }
     callee = evaluate(expr->expr.call.callee);
 
     Callable * function = literal_as_Callable(callee);
@@ -166,6 +111,8 @@ void * interpret_Print(Stmt* stmt){
         printf("%f\n", *((double*)value->data));
     } else if (cmp_types(value->type, "string")){
         printf("%s\n", (char*)value->data);
+    } else if (cmp_types(value->type, "bool")){
+        printf("%s\n", *((int*)value->data) ? "true" : "false");
     } else {
         fprintf(stderr, "Invalid type for print\n");
         exit(1);
@@ -303,26 +250,6 @@ void *interpret_Ret(Expr* expr){
     interpreter.check_return = 1;
     return NULL;
 }
-// void *interpret_FunDeclaration(Stmt* stmt){
-//     Token* name = stmt->stmt.function.name;
-//     List_Stmt* params = stmt->stmt.function.params;
-//     List_Stmt* body = stmt->stmt.function.body;
-
-//     Callable* function = newCallable(params, body);
-    
-//     Literal* value = newLiteral("function", (void*)function);
-//     Expr* initializer = newLiteralExpr(value);
-//     Literal* ltype = newLiteral("string", strdup("function"));
-//     Token* type = newToken(TYPE, "function", ltype, 0);
-//     Stmt* varStmt = newVarStmt(type, name, initializer);
-//     execute(varStmt);
-
-//     freeToken(type);
-//     freeStmt(varStmt);
-
-
-//     return NULL;
-// }
 
 Node_Stmt* Interpret(List_Stmt *stmts){
     Node_Stmt *current = stmts->head;
@@ -345,7 +272,7 @@ void interpreter_init(){
     interpreter.expr_visitor = (ExprVisitor*)malloc(sizeof(ExprVisitor));
     interpreter.stmt_visitor = (StmtVisitor*)malloc(sizeof(StmtVisitor));
 
-    interpreter.expr_visitor->visitBinary    = interpret_Binary;
+    // interpreter.expr_visitor->visitBinary    = interpret_Binary;
     interpreter.expr_visitor->visitGrouping  = interpret_Grouping;
     interpreter.expr_visitor->visitLiteral   = interpret_Literal;
     interpreter.expr_visitor->visitUnary     = interpret_Unary;

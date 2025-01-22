@@ -81,10 +81,9 @@ Expr* finishCall(Parser* parser, Expr* callee){
         fprintf(stderr, "Expect ')' after arguments\n");
         exit(1);
     }
-    Token *paren = parser->current->data;
     parser->current = parser->current->next;
     arguments->free_lit_from = NULL;
-    return newCallExpr(callee, paren, arguments);
+    return newCallExpr(callee, arguments);
 }
 
 Expr* call(Parser * parser){
@@ -106,12 +105,23 @@ Expr *unary(Parser* parser){
     return call(parser);
 }
 
+Expr *binary_to_call(Parser* parser, Expr* left, char* operator, Expr* (*next_func)(Parser*)){
+    Literal *lit = newLiteral("string", strdup(operator),1);
+    List_Expr *arguments = newList_Expr();
+    Token* Tcallee = newToken(IDENTIFIER, (char*)lit->data, lit, parser->current->data->line,1);
+    Expr* callee = newVariableExpr(Tcallee);
+
+    parser->current = parser->current->next;
+    add_Expr(arguments, left);
+    add_Expr(arguments, next_func(parser));
+    arguments ->free_lit_from = NULL;
+    return newCallExpr(callee, arguments);
+}
+
 Expr* factor(Parser* parser){
     Expr* expr = unary(parser);
     while(match_type(parser, STAR) || match_type(parser, SLASH)){
-        Token *token = parser->current->data;
-        parser->current = parser->current->next;
-        expr = newBinaryExpr(expr, token, unary(parser));
+        expr = binary_to_call(parser, expr, match_type(parser, STAR) ? "mul" : "div", unary);
     }
     return expr;
 }
@@ -119,20 +129,31 @@ Expr* factor(Parser* parser){
 Expr *term(Parser* parser){
     Expr* expr = factor(parser);
     while(match_type(parser, PLUS) || match_type(parser, MINUS)){
-        Token *token = parser->current->data;
-        parser->current = parser->current->next;
-        expr = newBinaryExpr(expr, token, factor(parser));
+        expr = binary_to_call(parser, expr, match_type(parser, PLUS) ? "add" : "sub", factor);
     }
     return expr;
 }
 
 Expr *comparison(Parser* parser){
     Expr* expr = term(parser);
+    char* operator;
     while(match_type(parser, GREATER) || match_type(parser, GREATER_EQUAL)
         || match_type(parser, LESS) || match_type(parser, LESS_EQUAL)){
-        Token *token = parser->current->data;
-        parser->current = parser->current->next;
-        expr = newBinaryExpr(expr, token, term(parser));
+        switch (parser->current->data->type){
+        case GREATER:
+            operator = "gt";
+            break;
+        case GREATER_EQUAL:
+            operator = "ge";
+            break;
+        case LESS:
+            operator = "lt";
+            break;
+        case LESS_EQUAL:
+            operator = "le";
+            break;
+        }
+        expr = binary_to_call(parser, expr, operator, term);
     }
     return expr;
 }
@@ -140,9 +161,7 @@ Expr *comparison(Parser* parser){
 Expr *equality(Parser* parser){
     Expr* expr = comparison(parser);
     while(match_type(parser,BANG_EQUAL) || match_type(parser,EQUAL_EQUAL)){
-        Token *token = parser->current->data;
-        parser->current = parser->current->next;
-        expr = newBinaryExpr(expr, token, comparison(parser));
+        expr = binary_to_call(parser, expr, match_type(parser, BANG_EQUAL) ? "neq" : "eq", comparison);
     }
     return expr;
 }

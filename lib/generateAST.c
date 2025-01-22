@@ -368,8 +368,7 @@ int main(int argc, char **argv){
 
     const char *ExprNames[] = {
         "Assign   : Token* name, Expr* value",
-        "Binary   : Expr* left, Token* operatorT, Expr* right",
-        "Call     : Expr* callee, Token* paren, List_Expr* arguments",
+        "Call     : Expr* callee, List_Expr* arguments",
         "Grouping : Expr* expression",
         "Literal  : Literal* value",
         "Unary    : Token* operatorT, Expr* right",

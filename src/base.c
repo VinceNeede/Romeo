@@ -23,7 +23,25 @@
         *((ret_type*)res->data) = *((type2*)args->head->data->data) op *((type1*)args->head->next->data->data); \
         return res; \
     }
+#define comparison_op(name, type, op) \
+    Literal *name##_##type##_##type(List_Literal* args){ \
+        Literal *res = newLiteral("bool", malloc(sizeof(int)),1); \
+        *((int*)res->data) = *((type*)args->head->data->data) op *((type*)args->head->next->data->data); \
+        return res; \
+    }
 
+comparison_op(eq, int, ==)
+comparison_op(neq, int, !=)
+comparison_op(lt, int, <)
+comparison_op(gt, int, >)
+comparison_op(le, int, <=)
+comparison_op(ge, int, >=)
+// comparison_op(eq, double, ==) Double should not be compared
+comparison_op(neq, double, !=)
+comparison_op(lt, double, <)
+comparison_op(gt, double, >)
+comparison_op(le, double, <=)
+comparison_op(ge, double, >=)
 
 
 binary_op(add, int, +)
@@ -63,18 +81,7 @@ binary_op2(div, int, double, double, /)
     key->field.function.non_optional_args = args_types->size; \
     Rfunction = newCallable(NULL, NULL, #ret_type); \
     Rfunction->function = fun_name##_##type1##_##type2; \
-    addHT_var(r##type1->look_up_table, newRvariable("function", key, Rfunction),0); \
-    args_types = newList_string(); \
-    add_string(args_types, strdup(#type2)); \
-    add_string(args_types, strdup(#type1)); \
-    key = (key_field*)malloc(sizeof(key_field)); \
-    key->type = FUNCTION; \
-    key->field.function.name = strdup(#fun_name); \
-    key->field.function.args_types = args_types; \
-    key->field.function.non_optional_args = args_types->size; \
-    Rfunction = newCallable(NULL, NULL, #ret_type); \
-    Rfunction->function = fun_name##_##type2##_##type1; \
-    addHT_var(r##type2->look_up_table, newRvariable("function", key, Rfunction),0);
+    addHT_var(r##type1->look_up_table, newRvariable("function", key, Rfunction),0);
 
 void base_functions(){
     List_string *args_types;
@@ -95,6 +102,21 @@ void base_functions(){
     C_to_Romeo_fun2(sub, int, double, double)
     C_to_Romeo_fun2(mul, int, double, double)
     C_to_Romeo_fun2(div, int, double, double)
+    C_to_Romeo_fun2(add, double, int, double)
+    C_to_Romeo_fun2(sub, double, int, double)
+    C_to_Romeo_fun2(mul, double, int, double)
+    C_to_Romeo_fun2(div, double, int, double)
+    C_to_Romeo_fun2(eq, int, int, bool)
+    C_to_Romeo_fun2(neq, int, int, bool)
+    C_to_Romeo_fun2(lt, int, int, bool)
+    C_to_Romeo_fun2(gt, int, int, bool)
+    C_to_Romeo_fun2(le, int, int, bool)
+    C_to_Romeo_fun2(ge, int, int, bool)
+    C_to_Romeo_fun2(neq, double, double, bool)
+    C_to_Romeo_fun2(lt, double, double, bool)
+    C_to_Romeo_fun2(gt, double, double, bool)
+    C_to_Romeo_fun2(le, double, double, bool)
+    C_to_Romeo_fun2(ge, double, double, bool)
 }
 
 
