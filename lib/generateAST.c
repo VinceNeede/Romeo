@@ -106,7 +106,8 @@ void define_Accept(const char* headerDir, const char* sourceDir, const char* bas
     header = fopen(headerPath, "a");
     source = fopen(sourcePath, "w");
     fprintf(source, "#include\"%s.h\"\n", baseName);
-
+    fprintf(source, "#include\"LinkList_Expr.h\"\n");
+    fprintf(source, "#include\"LinkList_Stmt.h\"\n");
     const char **head = types;
     char *type=NULL, *upper_type=NULL;
     char *lower_baseName = lower(baseName); char *upper_baseName = upper(baseName);
@@ -259,8 +260,10 @@ void define_destructor(const char* headerDir, const char* sourceDir, const char*
                         fprintf(source,"\t\tif (free_literal) freeLiteral(%s -> %s.%s.%s->literal,1);\n",lower_baseName, lower_baseName, lower_type, argument_name);
                         fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
                     }
-                    // else if (strstr(tmp,"List_")!=NULL)
-                    //     fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+                    else if (strstr(tmp,"List_")!=NULL){
+                        fprintf(source,"\t\tif (!free_literal) %s -> %s.%s.%s->free_lit_from = NULL;\n",lower_baseName, lower_baseName, lower_type, argument_name);
+                        fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
+                    }
                     else
                         fprintf(source,"\t\tfree%s (%s -> %s.%s.%s);\n",tmp, lower_baseName, lower_baseName, lower_type, argument_name);
                 }
@@ -373,6 +376,7 @@ int main(int argc, char **argv){
         "Literal  : Literal* value",
         "Variable : Token* name",
         "Ret      : Expr* value",
+        "Reference: Token* name",
         NULL
     };
     const char *ExprIncludes[] = {"token.h", NULL};

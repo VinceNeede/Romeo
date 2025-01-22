@@ -66,6 +66,17 @@ void * interpret_Call(Expr* expr){
     return res;//(void*)res;
 }
 
+void * interpret_Reference(Expr* expr){
+    Token* tname = expr->expr.reference.name;
+    Rvariable* var = get_var(interpreter.env, tname, 1);
+    if (var == NULL){
+        fprintf(stderr, "Variable %s not found\n", (char*)tname->literal->data);
+        exit(1);
+    }
+    freeLiteral(tname->literal,1);
+    return newLiteral(var->type, var->pos, 0);
+}
+
 void * interpret_Print(Stmt* stmt){
     Literal* value = evaluate(stmt->stmt.print.expression);
     if (cmp_types(value->type, "int")){
@@ -116,10 +127,21 @@ void * interpret_VarDeclaration(Stmt* stmt){
     }
     Rvariable *var;
     key_field* key = (key_field*)tname->literal->data;
-    if (t->size == 0)
-        var = newRvariable(t->name, key, NULL);
-    else
-        var = newRvariable(t->name, key, malloc(t->size));
+
+    var = newRvariable(t->name, key, NULL);
+    if (initializer != NULL){
+        Literal * value = evaluate(initializer);
+        if (!cmp_types(value->type, t->name)){
+            fprintf(stderr, "Error: type mismatch\n");
+            exit(1);
+        }
+        var->pos = value->data;
+        free(value->type);
+        free(value);
+    } else if (t->size == 0) {
+        fprintf(stderr, "Error: type %s is not implemented fully\n",t->name);
+        exit(1);
+    } else var->pos = malloc(t->size);
 
     if (interpreter.env->enclosing == NULL && key -> type == FUNCTION && key->field.function.args_types != NULL && key->field.function.args_types->size > 0){
         // add to lookup only if defined in global scope
@@ -128,13 +150,7 @@ void * interpret_VarDeclaration(Stmt* stmt){
         addHT_var(Rtype_first_arg->look_up_table, var, 0);
     } else addHT_var(interpreter.env->vars, var, 0);
     
-    if (initializer != NULL){
-        Literal * value = evaluate(initializer);
-        update_var_from_Literal(var, value);
-        free(value->data);
-        free(value->type);
-        free(value);
-    }
+
     freeLiteral(type->literal,1);
     free(tname->literal->type);
     free(tname->literal);
@@ -242,6 +258,7 @@ void interpreter_init(){
     interpreter.expr_visitor->visitAssign    = interpret_VarAssign;
     interpreter.expr_visitor->visitCall      = interpret_Call;
     interpreter.expr_visitor->visitRet       = interpret_Ret;
+    interpreter.expr_visitor->visitReference = interpret_Reference;
 
 
     interpreter.stmt_visitor->visitExpression = interpret_Expr;

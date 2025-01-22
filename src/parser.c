@@ -96,6 +96,20 @@ Expr* call(Parser * parser){
     return expr;
 }
 
+Expr* reference(Parser* parser){
+    if (match_type(parser, AMPERSAND)){
+        parser->current = parser->current->next;
+        Token *token = parser->current->data;
+        if (token->type != IDENTIFIER){
+            fprintf(stderr, "Expect identifier after &\n");
+            exit(1);
+        }
+        parser ->current = parser->current->next;
+        return newReferenceExpr(token);
+    }
+    return call(parser);
+}
+
 Expr *unary(Parser* parser){
     if(match_type(parser, MINUS) || match_type(parser, BANG)){
         Literal *lit = newLiteral("string", strdup(match_type(parser,MINUS) ? "negate" : "not"),1);
@@ -105,10 +119,10 @@ Expr *unary(Parser* parser){
 
         parser->current = parser->current->next;
         add_Expr(arguments, primary(parser));       // why not call?
-        arguments ->free_lit_from = NULL;
+        // arguments ->free_lit_from = NULL;
         return newCallExpr(callee, arguments);
     }
-    return call(parser);
+    return reference(parser);
 }
 
 Expr *binary_to_call(Parser* parser, Expr* left, char* operator, Expr* (*next_func)(Parser*)){
@@ -120,7 +134,7 @@ Expr *binary_to_call(Parser* parser, Expr* left, char* operator, Expr* (*next_fu
     parser->current = parser->current->next;
     add_Expr(arguments, left);
     add_Expr(arguments, next_func(parser));
-    arguments ->free_lit_from = NULL;
+    // arguments ->free_lit_from = NULL;
     return newCallExpr(callee, arguments);
 }
 

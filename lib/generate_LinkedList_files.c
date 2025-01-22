@@ -271,6 +271,10 @@ int main(int argc, char *argv[]) {
             subfix, tmp);
 
     // implement copyList_<subfix>
+    if (add_free)
+        sprintf(tmp, "new_list->free_lit_from = new_list->head;\n");
+    else
+        tmp[0]='\0';
     fprintf(src,
                 "List_%s* copyList_%s(List_%s *list){\n"
                 "    List_%s *new_list = newList_%s();\n"
@@ -287,8 +291,9 @@ int main(int argc, char *argv[]) {
     fprintf(src,
                 "        current = current->next;\n"
                 "    }\n"
+                "%s"
                 "    return new_list;\n"
-                "}\n");
+                "}\n",tmp);
 
 
     fprintf(header, "#endif // LINKLIST_%s_H\n", subfix);

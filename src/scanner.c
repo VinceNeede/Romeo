@@ -170,6 +170,7 @@ void scanToken(Scanner* scanner){
         case '+': addToken_toScanner(scanner, PLUS        ,NULL); break;
         case ';': addToken_toScanner(scanner, SEMICOLON   ,NULL); break;
         case '*': addToken_toScanner(scanner, STAR        ,NULL); break; 
+        case '&': addToken_toScanner(scanner, AMPERSAND   ,NULL); break;
         //comparison operators
         case '!':
             addToken_toScanner(scanner, match(scanner,'=') ? BANG_EQUAL : BANG, NULL);
