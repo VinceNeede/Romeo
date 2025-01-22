@@ -5,7 +5,7 @@ size_t hash_var(const key_field * key){
     const char * key_str;
     switch (key->type){
         case FUNCTION:
-            key_str = (const char*)key->field.function.name;
+            return hash_fun(key);
             break;
         case NAME:
             key_str = (const char*)key->field.name;
@@ -22,20 +22,7 @@ int cmp_var (const key_field* ht_key, const key_field* cmp_key){
     if (ht_key->type != cmp_key->type) return 0;
     switch (ht_key->type){
         case FUNCTION:
-            int cmp_names = strcmp((const char*)ht_key->field.function.name, (const char*)cmp_key->field.function.name);
-            if (cmp_names) return 0;
-            List_string *args1 = ht_key->field.function.args_types;
-            List_string *args2 = cmp_key->field.function.args_types;
-            if (ht_key->field.function.non_optional_args > args2->size) return 0;
-            Node_string *current1 = args1->head;
-            Node_string *current2 = args2->head;
-            int i = 0;
-            while (current2 != NULL && !strcmp(current1->data, current2->data)){
-                current1 = current1->next;
-                current2 = current2->next;
-                i++;
-            }
-            return i >= ht_key->field.function.non_optional_args;
+            return cmp_fun(ht_key, cmp_key);
         case NAME:
             return strcmp((const char*)ht_key->field.name, (const char*)cmp_key->field.name) == 0;
     }
@@ -85,6 +72,14 @@ Rvariable* get_var(Environment* env, Token* Tkey, int recurse){
         key->field.name = strdup(Tkey->lexeme);
         freeLiteral(Tkey->literal,1);
         Tkey->literal = newLiteral("key_field", (void*)key,1);
+    }
+
+    // first search in look up table
+    if ( key->type == FUNCTION && key->field.function.args_types!=NULL && key->field.function.args_types->size > 0){
+        char * type_first_arg = key->field.function.args_types->head->data;
+        Rtype *t = searchHT_Rtype(types, type_first_arg);
+        var = searchHT_var(*t->look_up_table, key);
+        if (var != NULL) return var; 
     }
     var = searchHT_var(*env->vars, key);
     if (var != NULL){
