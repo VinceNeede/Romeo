@@ -50,7 +50,7 @@ binary_op2(div, int, double, double, /)
     key->field.function.non_optional_args = args_types->size; \
     Rfunction = newCallable(NULL, NULL, #ret_type); \
     Rfunction->function = fun_name##_##ret_type##_##ret_type; \
-    addHT_var(vars, newRvariable("function", key, Rfunction),0);  
+    addHT_var(r##ret_type->look_up_table, newRvariable("function", key, Rfunction),0);  
 
 #define  C_to_Romeo_fun2(fun_name, type1, type2, ret_type) \
     args_types = newList_string(); \
@@ -63,7 +63,7 @@ binary_op2(div, int, double, double, /)
     key->field.function.non_optional_args = args_types->size; \
     Rfunction = newCallable(NULL, NULL, #ret_type); \
     Rfunction->function = fun_name##_##type1##_##type2; \
-    addHT_var(vars, newRvariable("function", key, Rfunction),0); \
+    addHT_var(r##type1->look_up_table, newRvariable("function", key, Rfunction),0); \
     args_types = newList_string(); \
     add_string(args_types, strdup(#type2)); \
     add_string(args_types, strdup(#type1)); \
@@ -74,12 +74,14 @@ binary_op2(div, int, double, double, /)
     key->field.function.non_optional_args = args_types->size; \
     Rfunction = newCallable(NULL, NULL, #ret_type); \
     Rfunction->function = fun_name##_##type2##_##type1; \
-    addHT_var(vars, newRvariable("function", key, Rfunction),0);
+    addHT_var(r##type2->look_up_table, newRvariable("function", key, Rfunction),0);
 
-void base_functions(HT_var **vars){
+void base_functions(){
     List_string *args_types;
     key_field *key;
     Callable *Rfunction;
+    Rtype *rint = searchHT_Rtype(types, "int");
+    Rtype *rdouble = searchHT_Rtype(types, "double");
 
     C_to_Romeo_fun(add, int)
     C_to_Romeo_fun(sub, int)
