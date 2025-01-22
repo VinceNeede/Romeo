@@ -205,12 +205,19 @@ void * interpret_VarDeclaration(Stmt* stmt){
         fprintf(stderr, "Invalid key_field for variable %s\n", name);
     }
     Rvariable *var;
+    key_field* key = (key_field*)tname->literal->data;
     if (t->size == 0)
-        var = newRvariable(t->name,(key_field*)tname->literal->data, NULL);
+        var = newRvariable(t->name, key, NULL);
     else
-        var = newRvariable(t->name,(key_field*)tname->literal->data, malloc(t->size));
+        var = newRvariable(t->name, key, malloc(t->size));
 
-    addHT_var(interpreter.env->vars, var, 0);
+    if (interpreter.env->enclosing == NULL && key -> type == FUNCTION && key->field.function.args_types != NULL && key->field.function.args_types->size > 0){
+        // add to lookup only if defined in global scope
+        char* type_first_arg = key->field.function.args_types->head->data;
+        Rtype *Rtype_first_arg = searchHT_Rtype(types, type_first_arg);
+        addHT_var(Rtype_first_arg->look_up_table, var, 0);
+    } else addHT_var(interpreter.env->vars, var, 0);
+    
     if (initializer != NULL){
         Literal * value = evaluate(initializer);
         update_var_from_Literal(var, value);
