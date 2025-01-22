@@ -1,9 +1,10 @@
 #ifndef VARIABLE_H
 #define VARIABLE_H
+#include "forward_decl.h"
 #include "types.h"
 #include "token.h"
 
-typedef struct{
+typedef struct Rvariable{
     char* type;
     key_field *key;     // can become a token
     void *pos;
