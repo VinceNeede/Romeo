@@ -104,6 +104,7 @@ int main(int argc, char *argv[]) {
             "#ifndef HT_%s_H\n"
             "#define HT_%s_H\n"
             "#include \"LinkList_%s.h\"\n"
+            "#include \"tools.h\"\n"
             "#include<stdio.h>\n"
             "#include<stdlib.h>\n",
             subfix, subfix, subfix);
@@ -138,7 +139,7 @@ int main(int argc, char *argv[]) {
             subfix, subfix);
     // define HT_subfix_insert
     fprintf(header,
-            "void addHT_%s(HT_%s *ht, %s item, int can_update);\n",
+            "void addHT_%s(HT_%s **ht_pos, %s item, int can_update);\n",
             subfix, subfix, type);
     // define HT_subfix_search
     fprintf(header,
@@ -148,6 +149,10 @@ int main(int argc, char *argv[]) {
     fprintf(header,
             "void rmHT_%s(HT_%s *ht, %s key);\n",
             subfix, subfix, key_type);
+    // define resizeHT_subfix
+    fprintf(header,
+            "void resizeHT_%s(HT_%s **ht);\n",
+            subfix, subfix);
     fprintf(header, "#endif\t//HT_%s_H\n", subfix);
     fclose(header);
 
@@ -205,8 +210,10 @@ int main(int argc, char *argv[]) {
 					"\twhile(current != NULL && ! %s) {\n"
 					"\t\tcurrent = current -> next;\n"
 					"\t}\n"
-					"\tif(current == NULL) add_%s(ht->overflow_buckets[index], item);\n"
-					"\telse if (ht->update != NULL && can_update) ht->update(current->data,item);\n"
+					"\tif(current == NULL) {\n"
+                    "\tadd_%s(ht->overflow_buckets[index], item);\n"
+                    "\tht->count++;\n"
+                    "\t}else if (ht->update != NULL && can_update) ht->update(current->data,item);\n"
 					"}\n",
 			subfix, subfix, type, 
 			subfix,
@@ -215,7 +222,13 @@ int main(int argc, char *argv[]) {
 
 
     // define HT_subfix_insert
-    fprintf(src,"void addHT_%s(HT_%s *ht, %s item, int can_update) {\n", subfix, subfix, type);
+    fprintf(src,"void addHT_%s(HT_%s **ht_pos, %s item, int can_update) {\n", subfix, subfix, type);
+    fprintf(src,"\tHT_%s *ht = *ht_pos;\n", subfix);
+    fprintf(src,"\tsize_t load = ht->count * 100 / ht->size;\n"
+                "\tif (load > 70){\n"
+                "\t\tresizeHT_%s(ht_pos);\n"
+                "\t\tht=*ht_pos;\n"
+                "\t}\n", subfix);
 	if (key_field != NULL){
 	    fprintf(src,"\tsize_t index = ht->hash(item -> %s) %% ht->size;\n",key_field);
 		sprintf(tmp,"ht -> cmp(ht->items[index]->%s,item->%s)",key_field,key_field);
@@ -289,6 +302,32 @@ int main(int argc, char *argv[]) {
 			"\t}\n"
             "}\n",
             subfix, subfix, tmp, subfix);
+
+    // Implement resizeHT_subfix
+    fprintf(src,
+            "void resizeHT_%s(HT_%s **ht) {\n"
+            "\tHT_%s *old_ht = *ht;\n"
+            "\tint new_size = next_prime(old_ht->size);\n"
+            "\tHT_%s *new_ht = newHT_%s(new_size, old_ht->hash, old_ht->cmp, old_ht->update, old_ht->free_item);\n"
+            "\tfor (int i = 0; i < old_ht->size; i++) {\n"
+            "\t\tif (old_ht->items[i] != NULL) addHT_%s(&new_ht, old_ht->items[i], 0);\n"
+            "\t\tNode_%s *current = old_ht->overflow_buckets[i]->head;\n"
+            "\t\tNode_%s *next = NULL;\n"
+            "\t\twhile(current != NULL) {\n"
+            "\t\t\taddHT_%s(&new_ht, current->data, 0);\n"
+            "\t\t\tnext = current -> next;\n"
+            "\t\t\tfree(current);\n"
+            "\t\t\tcurrent = next;\n"
+            "\t\t}\n"
+            "\t\tfree(old_ht->overflow_buckets[i]);\n"
+            "\t}\n"
+            "\tfree(old_ht->items);\n"
+            "\tfree(old_ht->overflow_buckets);\n"
+            "\tfree(old_ht);\n"
+            "\t*ht = new_ht;\n"
+            "}\n",
+            subfix, subfix, subfix, subfix, subfix, subfix, subfix, subfix, subfix);
+    
 	fclose(src);
     free(path_header);
     free(path_c);
