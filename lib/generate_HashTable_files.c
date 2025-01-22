@@ -103,6 +103,7 @@ int main(int argc, char *argv[]) {
     fprintf(header,
             "#ifndef HT_%s_H\n"
             "#define HT_%s_H\n"
+            "#include \"forward_decl.h\"\n"
             "#include \"LinkList_%s.h\"\n"
             "#include \"tools.h\"\n"
             "#include<stdio.h>\n"
@@ -111,7 +112,7 @@ int main(int argc, char *argv[]) {
     
     // define struct HT_subfix
     fprintf(header,
-            "typedef struct {\n"
+            "typedef struct ht_%s{\n"
             "\t%s *items;\n"
             "\tList_%s **overflow_buckets;\n"
             "\tint size;\n"
@@ -121,6 +122,7 @@ int main(int argc, char *argv[]) {
             "\tvoid (*update)(%s, const %s);\n"
             "\t void (*free_item)(%s);\n"
             "}HT_%s;\n",
+            subfix,
             type,
             subfix,
             key_type,

@@ -106,10 +106,11 @@ int main(int argc, char *argv[]) {
             "#define LINKLIST_%s_H\n",
             subfix, subfix);
 
+
+    fprintf(header, "#include \"forward_decl.h\"\n");
     for (int i=0; i<n_headers; i++) {
         fprintf(header, "#include \"%s\"\n", headers[i]);
     }
-
     fprintf(header, "typedef struct node_%s {\n"
             "    %s data;\n"
             "    struct node_%s *next;\n"
@@ -138,13 +139,11 @@ int main(int argc, char *argv[]) {
             "void add_%s(List_%s *list, %s data);\n"
             "%s getIndex_%s(List_%s *list, int index);\n"
             "List_%s* copyList_%s(List_%s *list);\n"
-            "#endif // LINKLIST_%s_H\n",
-            subfix, subfix, subfix, 
+            ,subfix, subfix, subfix, 
             tmp, subfix,
             subfix, subfix, subfix, subfix, type, type,
             subfix, subfix, 
-            subfix, subfix, subfix,
-            subfix);
+            subfix, subfix, subfix);
 
     if (add_free)
         fprintf(header,
@@ -292,6 +291,7 @@ int main(int argc, char *argv[]) {
                 "}\n");
 
 
+    fprintf(header, "#endif // LINKLIST_%s_H\n", subfix);
     fclose(header);
     fclose(src);
     free(path_header);
