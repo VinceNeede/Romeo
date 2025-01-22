@@ -27,7 +27,7 @@ typedef enum {
     TOKEN_EOF
 } TokenType;
 
-typedef struct {
+typedef struct Literal{
     char *type;
     void * data;
     int free_data;
