@@ -27,7 +27,7 @@ void types_init(){
     Rtype *rint = newRtype(NAME,"int",sizeof(int),0);
     Rtype *rdouble = newRtype(NAME,"double",sizeof(double),0);
     Rtype *rstring = newRtype(NAME,"string",0,0);
-    Rtype *rbool = newRtype(NAME,"bool",1,0);
+    Rtype *rbool = newRtype(NAME,"bool",sizeof(int),0);
     Rtype *rfunction = newRtype(FUNCTION,"function",sizeof(Callable),1);
     
     addHT_Rtype(&types, newRtype(NAME,"void",0,0), 0);
