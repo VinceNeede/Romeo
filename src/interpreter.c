@@ -21,43 +21,6 @@ void* interpret_Grouping(Expr* expr){
     return evaluate(expr->expr.grouping.expression);
 }
 
-void* interpret_Unary(Expr* expr){
-    Token* operatorT = expr->expr.unary.operatorT;
-    Expr* right = expr->expr.unary.right;
-    Literal* rightValue = evaluate(right);
-    Literal* res;
-
-    switch (operatorT->type){
-        case MINUS:
-            if (cmp_types(rightValue->type, "int")){
-                int * value = (int*)malloc(sizeof(int));
-                *value = -1 * (*((int*)rightValue->data));
-                res = newLiteral("int", (void*)value,1);
-            }else if (cmp_types(rightValue->type, "double")){
-                double * doubleValue = (double*)malloc(sizeof(double));
-                *doubleValue = -1 * (*((double*)rightValue->data));
-                res = newLiteral("double", (void*)doubleValue,1);
-            } else {
-                fprintf(stderr, "Invalid type for unary minus\n");
-                exit(1);
-            }
-            break;
-        case BANG:
-            if (cmp_types(rightValue->type, "int")){
-                int * value = (int*)malloc(sizeof(int));
-                *value =  !(*((int*)rightValue->data));
-                res = newLiteral("int", (void*)value,1);
-                break;
-            } else {
-                fprintf(stderr, "Invalid type for unary bang\n");
-                exit(1);
-            }
-            break;
-    }
-    freeLiteral(rightValue,0);
-    return (void*)res;
-}
-
 void * interpret_Call(Expr* expr){
     Literal * callee; 
     List_Expr * arguments = expr->expr.call.arguments;
@@ -275,7 +238,6 @@ void interpreter_init(){
     // interpreter.expr_visitor->visitBinary    = interpret_Binary;
     interpreter.expr_visitor->visitGrouping  = interpret_Grouping;
     interpreter.expr_visitor->visitLiteral   = interpret_Literal;
-    interpreter.expr_visitor->visitUnary     = interpret_Unary;
     interpreter.expr_visitor->visitVariable  = interpret_Variable;
     interpreter.expr_visitor->visitAssign    = interpret_VarAssign;
     interpreter.expr_visitor->visitCall      = interpret_Call;

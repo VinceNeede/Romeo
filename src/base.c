@@ -29,6 +29,12 @@
         *((int*)res->data) = *((type*)args->head->data->data) op *((type*)args->head->next->data->data); \
         return res; \
     }
+#define unary_op(name, type, op) \
+    Literal *name##_##type(List_Literal* args){ \
+        Literal *res = newLiteral(#type, malloc(sizeof(type)),1); \
+        *((type*)res->data) = op *((type*)args->head->data->data); \
+        return res; \
+    }
 
 comparison_op(eq, int, ==)
 comparison_op(neq, int, !=)
@@ -57,6 +63,11 @@ binary_op2(sub, int, double, double, -)
 binary_op2(mul, int, double, double, *)
 binary_op2(div, int, double, double, /)
 
+unary_op(negate, int, -)
+unary_op(negate, double, -)
+unary_op(not, int, !)
+unary_op(not, bool, !)
+
 #define  C_to_Romeo_fun(fun_name, ret_type) \
     args_types = newList_string(); \
     add_string(args_types, strdup(#ret_type)); \
@@ -82,13 +93,24 @@ binary_op2(div, int, double, double, /)
     Rfunction = newCallable(NULL, NULL, #ret_type); \
     Rfunction->function = fun_name##_##type1##_##type2; \
     addHT_var(r##type1->look_up_table, newRvariable("function", key, Rfunction),0);
-
+#define C_to_Romeo_unary_fun(fun_name, arg_type) \
+    args_types = newList_string(); \
+    add_string(args_types, strdup(#arg_type)); \
+    key = (key_field*)malloc(sizeof(key_field)); \
+    key->type = FUNCTION; \
+    key->field.function.name = strdup(#fun_name); \
+    key->field.function.args_types = args_types; \
+    key->field.function.non_optional_args = args_types->size; \
+    Rfunction = newCallable(NULL, NULL, #arg_type); \
+    Rfunction->function = fun_name##_##arg_type; \
+    addHT_var(r##arg_type->look_up_table, newRvariable("function", key, Rfunction),0);
 void base_functions(){
     List_string *args_types;
     key_field *key;
     Callable *Rfunction;
     Rtype *rint = searchHT_Rtype(types, "int");
     Rtype *rdouble = searchHT_Rtype(types, "double");
+    Rtype *rbool = searchHT_Rtype(types, "bool");
 
     C_to_Romeo_fun(add, int)
     C_to_Romeo_fun(sub, int)
@@ -117,6 +139,10 @@ void base_functions(){
     C_to_Romeo_fun2(gt, double, double, bool)
     C_to_Romeo_fun2(le, double, double, bool)
     C_to_Romeo_fun2(ge, double, double, bool)
+    C_to_Romeo_unary_fun(negate, int)
+    C_to_Romeo_unary_fun(negate, double)
+    C_to_Romeo_unary_fun(not, int)
+    C_to_Romeo_unary_fun(not, bool)
 }
 
 

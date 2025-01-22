@@ -97,10 +97,16 @@ Expr* call(Parser * parser){
 }
 
 Expr *unary(Parser* parser){
-    Token *token = parser->current->data;
     if(match_type(parser, MINUS) || match_type(parser, BANG)){
+        Literal *lit = newLiteral("string", strdup(match_type(parser,MINUS) ? "negate" : "not"),1);
+        List_Expr *arguments = newList_Expr();
+        Token* Tcallee = newToken(IDENTIFIER, (char*)lit->data, lit, parser->current->data->line,1);
+        Expr* callee = newVariableExpr(Tcallee);
+
         parser->current = parser->current->next;
-        return newUnaryExpr(token, primary(parser));    // possible to add recurrence with unary(parser)
+        add_Expr(arguments, primary(parser));       // why not call?
+        arguments ->free_lit_from = NULL;
+        return newCallExpr(callee, arguments);
     }
     return call(parser);
 }

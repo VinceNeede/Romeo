@@ -371,7 +371,6 @@ int main(int argc, char **argv){
         "Call     : Expr* callee, List_Expr* arguments",
         "Grouping : Expr* expression",
         "Literal  : Literal* value",
-        "Unary    : Token* operatorT, Expr* right",
         "Variable : Token* name",
         "Ret      : Expr* value",
         NULL
