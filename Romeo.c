@@ -80,15 +80,15 @@ int main(int argc, char *argv[]){
     parser = newParser(scanner->tokens);
     types_init();
     interpreter_init();
-    base_functions(interpreter.env->vars);
+    base_functions();
 
     if(argc==2) runFile(argv[1], scanner, parser);
     else runPrompt(scanner, parser);
 
     freeParser(parser);
     freeInterpreter();
-    freeScanner(scanner);
     free_types();
+    freeScanner(scanner);
 
     return 0;
 }
