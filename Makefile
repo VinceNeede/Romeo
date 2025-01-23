@@ -9,7 +9,7 @@ build_lib:
 	mkdir -p bin
 	@cd lib && make
 
-$(OUT_FOLDER)Romeo: Romeo.c lib/Rtype.c lib/HT_Rtype.c lib/types.c src/Expr.c src/token.c src/scanner.c src/Stmt.c lib/variable.c lib/HT_var.c src/parser.c src/environment.c src/interpreter.c lib/callable.c src/base.c lib/tools.c
+$(OUT_FOLDER)Romeo: Romeo.c lib/memblock.c lib/HT_MemBlock.c lib/Rtype.c lib/HT_Rtype.c lib/types.c src/Expr.c src/token.c src/scanner.c src/Stmt.c lib/variable.c lib/HT_var.c src/parser.c src/environment.c src/interpreter.c lib/callable.c src/base.c lib/tools.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ -Llib -lstringutils -lLinkedLists
 clean:
 	@cd lib && make clean
