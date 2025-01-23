@@ -10,7 +10,9 @@ Callable *newCallable(List_Stmt* params, List_Stmt* body, char* ret_type){
     return callable;
 }
 Callable *copyCallable(Callable* calle){
-    return newCallable(copyList_Stmt(calle->params), copyList_Stmt(calle->body), calle->return_type);
+    List_Stmt *params = calle->params==NULL? NULL : copyList_Stmt(calle->params);
+    List_Stmt *body = calle->body==NULL? NULL : copyList_Stmt(calle->body);
+    return newCallable(params, body, calle->return_type);
 }
 Callable *literal_as_Callable(Literal* lit){
     if (cmp_types(lit->type, "function")){
@@ -18,18 +20,6 @@ Callable *literal_as_Callable(Literal* lit){
     }
     return NULL;
 }
-
-// void freeList_Stmt_Callable(List_Stmt *list){
-//     Node_Stmt *current = list->head;
-//     Node_Stmt *next;
-//     while (current != NULL){
-//         next = current->next;
-//         freeStmt(current->data);
-//         free(current);
-//         current = next;
-//     }
-//     free(list);
-// }
 
 void freeCallable(Callable *callable){
     if (callable == NULL) return;
