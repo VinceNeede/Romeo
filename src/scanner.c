@@ -194,6 +194,7 @@ void scanToken(Scanner* scanner){
                 addToken_toScanner(scanner, SLASH, NULL);
             }
             break;
+        case '$':
         case ' ':
         case '\r':
         case '\t':
