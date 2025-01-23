@@ -1,5 +1,6 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
+#include "memblock.h"
 #include "Expr.h"
 #include "Stmt.h"
 #include "token.h"

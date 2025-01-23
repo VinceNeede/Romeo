@@ -74,7 +74,7 @@ void * interpret_Reference(Expr* expr){
         exit(1);
     }
     freeLiteral(tname->literal,1);
-    return newLiteral(var->type, var->pos, 0);
+    return newLiteral(var->type, (void*)var->block->start, 0);
 }
 
 void * interpret_Print(Stmt* stmt){
@@ -98,9 +98,26 @@ void * interpret_Print(Stmt* stmt){
 void *interpret_Variable(Expr* expr){
     Token* tname = expr->expr.variable.name;
     Rvariable* var = get_var(interpreter.env, tname, 1);
-    if (var == NULL){
-        fprintf(stderr, "Variable %s not found\n", (char*)tname->literal->data);
-        exit(1);
+    key_field *key = (key_field*)tname->literal->data;
+    switch (key->type){
+        case FUNCTION:
+            fprintf(stderr, "Error: function %s for parameter types (", key->field.function.name);
+            Node_string *current = key->field.function.args_types->head;
+            if (current == NULL) fprintf(stderr, "void");
+            else{
+                Node_string *next = current->next;
+                while (next != NULL){
+                    fprintf(stderr, "%s, ", current->data);
+                    current = current->next;
+                    next = current->next;
+                }
+                fprintf(stderr, "%s", current->data);
+            }
+            fprintf(stderr, ") not found\n");
+            break;
+        case NAME:
+            fprintf(stderr, "Error: variable %s not found\n", key->field.name);
+            break;
     }
     freeLiteral(tname->literal,1);
     return (void*)var_to_literal(var);
@@ -128,20 +145,19 @@ void * interpret_VarDeclaration(Stmt* stmt){
     Rvariable *var;
     key_field* key = (key_field*)tname->literal->data;
 
-    var = newRvariable(t->name, key, NULL);
     if (initializer != NULL){
         Literal * value = evaluate(initializer);
         if (!cmp_types(value->type, t->name)){
             fprintf(stderr, "Error: type mismatch\n");
             exit(1);
         }
-        var->pos = value->data;
+        var = newRvariable(t, key, value->data);
         free(value->type);
         free(value);
     } else if (t->size == 0) {
         fprintf(stderr, "Error: type %s is not implemented fully\n",t->name);
         exit(1);
-    } else var->pos = malloc(t->size);
+    } else var = newRvariable(t, key, NULL);
 
     if (interpreter.env->enclosing == NULL && key -> type == FUNCTION && key->field.function.args_types != NULL && key->field.function.args_types->size > 0){
         // add to lookup only if defined in global scope
@@ -191,7 +207,7 @@ void * interpret_VarAssign(Expr* expr){
         freeToken(type);
         // freeLiteral(tmp);
     } else {
-        update_var_from_Literal(var, value);
+        assignRvariable(var, value);
         freeLiteral(value,0);
         freeLiteral(tname->literal,0);
     }
@@ -273,6 +289,10 @@ void interpreter_init(){
 }
 
 void freeInterpreter(){
+    if (interpreter.env->enclosing != NULL){
+        fprintf(stderr, "Error: global environment not properly freed\n");
+        exit(1);
+    }
     free(interpreter.expr_visitor);
     free(interpreter.stmt_visitor);
     freeEnvironment(interpreter.env);
