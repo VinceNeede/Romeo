@@ -29,29 +29,6 @@ int cmp_var (const key_field* ht_key, const key_field* cmp_key){
     return 0;
 }
 
-void update_var_from_Literal(Rvariable* old, const Literal* new){
-    // A lot to add here, for now just update the value
-    if (!cmp_types(old->type,new->type)){
-        fprintf(stderr, "Error: type mismatch\n");
-        exit(1);
-    }
-    Rtype *t = searchHT_Rtype(types, old->type);
-    if (t == NULL){
-        fprintf(stderr, "Error: type %s not found\n",old->type);
-        exit(1);
-    }
-    if (strcmp(t->name,"string")  == 0){
-        size_t size =  strlen((char*)new->data);
-        old->pos = realloc(old->pos, size + 1);
-        strcpy(old->pos, (char*)new->data);
-        ((char*)old->pos)[size] = '\0';
-        return;
-    }
-    if (t->size == 0) fprintf(stderr, "Error: type %s is not implemented fully\n",old->type);
-     
-    memcpy(old->pos, new->data, t->size);
-}
-
 Environment * newEnvironment(Environment* enclosing){
     Environment* env = (Environment*)malloc(sizeof(Environment));
     int size = enclosing == NULL ? GLOBAL_ENV_SIZE : LOCAL_ENV_SIZE;

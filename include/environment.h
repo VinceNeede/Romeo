@@ -15,7 +15,6 @@ typedef struct env{
 
 Environment * newEnvironment(Environment* enclosing);
 void freeEnvironment(Environment* env);
-void update_var_from_Literal(Rvariable* old, const Literal* new);
 void interpreter_init();
 Rvariable* get_var(Environment* env, Token* Tkey, int recurse);
 #endif // ENVIRONMENT_H
