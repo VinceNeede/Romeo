@@ -1,0 +1,19 @@
+function increment (int $x){    //a dollar is added for convention but it is not required
+    x=x+1
+    print "the variable has been incremented"
+}
+y=10
+print y         //10
+increment(&y)
+print y         //11
+increment(y)
+print y         //11
+// it is also possible to initialize a variable, in that case that variable would be an alias of the previous
+int x = &y
+x = -5
+print(y)        //-5
+// attention, this is different from
+int z       // here new memory gets allocated
+z=&y        // the value gets stored in the pre existent variable z
+z=z+2
+print(y)       //-5
