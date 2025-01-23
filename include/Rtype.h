@@ -5,26 +5,10 @@
 #include <string.h>
 #include "LinkList_Rtype.h"
 #include "HT_var.h"
+#include "memblock.h"
 
 typedef struct List_string List_string;
 void freeList_string(List_string *);
-
-typedef enum{
-    NAME,
-    FUNCTION
-} key_type;
-
-typedef struct key_field{
-    key_type type;
-    union{
-        char* name;
-        struct{
-            char* name;
-            List_string* args_types;
-            int non_optional_args;
-        }function;
-    }field;
-} key_field;
 
 typedef struct Rtype{
     key_type key_type;
