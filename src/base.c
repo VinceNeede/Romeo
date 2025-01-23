@@ -77,9 +77,9 @@ unary_op(not, bool, !)
     key->field.function.name = strdup(#fun_name); \
     key->field.function.args_types = args_types; \
     key->field.function.non_optional_args = args_types->size; \
-    Rfunction = newCallable(NULL, NULL, #ret_type); \
-    Rfunction->function = fun_name##_##ret_type##_##ret_type; \
-    addHT_var(r##ret_type->look_up_table, newRvariable("function", key, Rfunction),0);  
+    callee = newCallable(NULL, NULL, #ret_type); \
+    callee->function = fun_name##_##ret_type##_##ret_type; \
+    addHT_var(r##ret_type->look_up_table, newRvariable(rfunction, key, callee),0);  
 
 #define  C_to_Romeo_fun2(fun_name, type1, type2, ret_type) \
     args_types = newList_string(); \
@@ -90,9 +90,9 @@ unary_op(not, bool, !)
     key->field.function.name = strdup(#fun_name); \
     key->field.function.args_types = args_types; \
     key->field.function.non_optional_args = args_types->size; \
-    Rfunction = newCallable(NULL, NULL, #ret_type); \
-    Rfunction->function = fun_name##_##type1##_##type2; \
-    addHT_var(r##type1->look_up_table, newRvariable("function", key, Rfunction),0);
+    callee = newCallable(NULL, NULL, #ret_type); \
+    callee->function = fun_name##_##type1##_##type2; \
+    addHT_var(r##type1->look_up_table, newRvariable(rfunction, key, callee),0);
 #define C_to_Romeo_unary_fun(fun_name, arg_type) \
     args_types = newList_string(); \
     add_string(args_types, strdup(#arg_type)); \
@@ -101,16 +101,17 @@ unary_op(not, bool, !)
     key->field.function.name = strdup(#fun_name); \
     key->field.function.args_types = args_types; \
     key->field.function.non_optional_args = args_types->size; \
-    Rfunction = newCallable(NULL, NULL, #arg_type); \
-    Rfunction->function = fun_name##_##arg_type; \
-    addHT_var(r##arg_type->look_up_table, newRvariable("function", key, Rfunction),0);
+    callee = newCallable(NULL, NULL, #arg_type); \
+    callee->function = fun_name##_##arg_type; \
+    addHT_var(r##arg_type->look_up_table, newRvariable(rfunction, key, callee),0);
 void base_functions(){
     List_string *args_types;
     key_field *key;
-    Callable *Rfunction;
+    Callable *callee;
     Rtype *rint = searchHT_Rtype(types, "int");
     Rtype *rdouble = searchHT_Rtype(types, "double");
     Rtype *rbool = searchHT_Rtype(types, "bool");
+    Rtype *rfunction = searchHT_Rtype(types, "function");
 
     C_to_Romeo_fun(add, int)
     C_to_Romeo_fun(sub, int)
