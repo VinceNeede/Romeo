@@ -288,7 +288,14 @@ int main(int argc, char *argv[]) {
 	}
 	fprintf(src,
 			"\t\tif (ht->free_item != NULL) ht->free_item(ht->items[index]);\n"
-            "\t\tht->items[index] = NULL;\n"
+            "\t\tif (ht->overflow_buckets[index]->head != NULL) {\n"
+            "\t\t\tNode_%s *current = ht->overflow_buckets[index]->head;\n"
+            "\t\t\tht->items[index] = current->data;\n"
+            "\t\t\tht->overflow_buckets[index]->head=current->next;\n"
+            "\t\t\tfree(current);\n"
+            "\t\t\tht->overflow_buckets[index]->size--;\n"
+            "\t\t} else ht->items[index] = NULL;\n"
+            "\t\tht->count--;\n"
             "\t} else {\n"
 			"\t\tNode_%s *current = ht->overflow_buckets[index]->head;\n"
 			"\t\tNode_%s *prev = NULL;\n"
@@ -300,10 +307,11 @@ int main(int argc, char *argv[]) {
 			"\t\t\tif(prev == NULL) ht->overflow_buckets[index]->head = current -> next;\n"
 			"\t\t\telse prev -> next = current -> next;\n"
 			"\t\t\tfreeNode_%s(current);\n"
+            "\t\t\tht->count--;\n"
 			"\t\t}\n"
 			"\t}\n"
             "}\n",
-            subfix, subfix, tmp, subfix);
+            subfix, subfix, subfix, tmp, subfix);
 
     // Implement resizeHT_subfix
     fprintf(src,
