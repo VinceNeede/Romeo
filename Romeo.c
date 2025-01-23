@@ -78,6 +78,7 @@ int main(int argc, char *argv[]){
     
     scanner = newScanner();
     parser = newParser(scanner->tokens);
+    memblock_init();
     types_init();
     interpreter_init();
     base_functions();
@@ -89,6 +90,6 @@ int main(int argc, char *argv[]){
     freeInterpreter();
     free_types();
     freeScanner(scanner);
-
+    if (free_memblocks()!=0) fprintf(stderr, "Memory leak detected\n");
     return 0;
 }
